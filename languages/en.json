@@ -1,0 +1,20 @@
+{
+    "fit.hello": "hello",
+    "fit.chat.you_are": "You are",
+    "fit.chat.eaten_since": "You haven't eaten since",
+    "fit.chat.to_regain_your_strength": "to regain your strength",
+    "fit.chat.to_satisfy_your_hunger": "to satisfy your hunger",
+    "fit.at": "at",
+    "fit.on": "on",
+    "fit.none": "none",
+    "fit.use": "use",
+    "fit.hunger.starving": "Starving",
+    "fit.hunger.famished": "Famished",
+    "fit.hunger.ravenous": "Ravenous",
+    "fit.hunger.hungry": "Hungry",
+    "fit.hunger.peckish": "A Bit Peckish",
+    "fit.hunger.satisfied": "Satisfied",
+    "fit.hunger.full": "Full",
+    "fit.hunger.stuffed": "Stuffed",
+    "fit.hunger.unknown": "Unknown"
+}
