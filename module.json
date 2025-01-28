@@ -1,0 +1,50 @@
+{
+  "title": "fit",
+  "description": "Make sure your players are fit to play",
+  "version": "0.0.1",
+  "authors": [
+    {
+      "name": "Richard Taylor",
+      "url": "https://github.com/nuck1234/fit",
+           "flags": {}
+    }
+  ],
+  "esmodules": [
+    "scripts/fit.js"
+  ],
+  "styles": [
+    "styles/module.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "languages/en.json",
+      "flags": {}
+    }
+  ],
+  "url": "https://github.com/scottburton11/fit",
+  "manifest": "https://github.com/scottburton11/fit/releases/latest/download/module.json",
+  "download": "https://github.com/scottburton11/fit/releases/download/0.2.0/module.zip",
+  "id": "fit",
+  "relationships": {
+    "requires": [
+      {
+        "id": "foundryvtt-simple-calendar",
+        "type": "module",
+        "compatibility": {}
+      }
+    ],
+    "systems": [
+      {
+        "id": "dnd5e",
+        "type": "system",
+        "compatibility": {}
+      }
+    ]
+  },
+  "compatibility": {
+    "minimum": "0.0.0",
+    "verified": "0.0.0"
+  }
+}

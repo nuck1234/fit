@@ -1,0 +1,64 @@
+<!-- Overall Explanation -->
+<!-- 
+This file defines the structure of an HTML table that displays hunger-related information for actors in a tabletop game. The table includes columns for Actor name, the time of their last meal, the time of their last hunger notification, the number of hours since their last meal, and their current hunger level. The data is dynamically populated using the Handlebars templating language. -->
+
+<div id="hunger_table">
+  <!-- Table Structure -->
+  <!-- 
+  The table contains a header row defining the column names and a body section populated with data for each actor. Data binding is achieved using the Handlebars templating engine, which iterates over a list of actors and dynamically generates rows based on actor attributes. 
+  -->
+  <table style="width: 100%; text-align: center;">
+    <thead>
+      <!-- Table Header -->
+      <!-- 
+      This section defines the column headers for the table. These columns correspond to actor attributes, providing a clear overview of their hunger-related stats. 
+      -->
+      <tr>
+        <th>Actor</th>
+        <th>Last Meal</th>
+        <!--<th>Last Notified</th>-->
+        <th>Hours Ago</th>
+        <th>Hunger</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Dynamic Rows -->
+      <!-- 
+      Each row represents an actor and is dynamically generated using the Handlebars templating syntax. The `each` helper iterates through a list of actors, inserting their specific data into the appropriate columns.
+      -->
+      {{#each actors }}
+        <tr>
+          <!-- Actor Name -->
+          <!-- 
+          Displays the name of the actor.
+          -->
+          <td>{{ name }}</td>
+
+          <!-- Last Meal -->
+          <!-- 
+          Combines the date and time of the actor's last meal into a single string for display.
+          -->
+          <td>{{lastMealAt}}</td>
+
+          <!-- Last Notified -->
+          <!-- 
+          Shows the last date and time the actor received a hunger notification.
+          -->
+         <!-- <td>{{ lastNotified.date }} {{ lastNotified.time }}</td>-->
+
+          <!-- Hours Since Last Meal -->
+          <!-- 
+          Displays the number of hours since the actor last ate, rounded to an appropriate precision.
+          -->
+          <td>{{ hoursSinceLastMeal }}</td>
+
+          <!-- Hunger Level -->
+          <!-- 
+          Represents the actor's current hunger level, which may influence game mechanics or narrative decisions.
+          -->
+          <td>{{ hunger }}</td>
+        </tr>
+      {{/each }}
+    </tbody>
+  </table>
+</div>
