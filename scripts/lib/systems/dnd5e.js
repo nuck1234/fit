@@ -55,7 +55,7 @@ export default class DND5eSystem {
       const daysHungry = this.daysHungryForActor(actor);
 
       // Apply or update hunger effects if the actor is hungry.
-      if (daysHungry > 0) {
+      if (daysHungry <=5) {
         const config = this.activeEffectConfig(actor, daysHungry);
         await addOrUpdateHungerEffect(actor, config);
       }
