@@ -19,7 +19,11 @@ export const hungerIcon = (daysHungry) => {
 
 // Function to calculate the hunger index based on the number of days hungry
 export const hungerIndex = (daysHungry) => {
-  return Math.max(DEFAULT_HUNGER_LEVEL - daysHungry, 0)
+  let index = DEFAULT_HUNGER_LEVEL + daysHungry;
+  if (index >= HUNGER_LEVELS.length) {
+    index = HUNGER_LEVELS.length - 1; // Prevent going beyond max hunger level
+  }
+  return index;
 }
 
 // Function to update the hunger state of an actor based on elapsed time
@@ -32,7 +36,7 @@ export const updateHunger = async (actor, elapsed) => {
   Hooks.call('updateHunger', actor)
 }
 
-// Function to get active hunger effects for an actorß
+// Function to get active hunger effects for an actor
 export const activeHungerEffectsFor = (actor) => {
   return actor.effects.filter(effect => effect.flags['fit'] && effect.flags['fit']['effect'] === 'hunger')
 }
