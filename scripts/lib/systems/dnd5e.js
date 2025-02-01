@@ -18,7 +18,19 @@ import {
 
 import { localize } from '../utils.js'; // Utility for localization of text.
 
+ // Helper function to calculate days hungry for an actor.
+ export const daysHungryForActor = (actor) => {
+  const baseTolerance = game.settings.get('fit', 'baseTolerance') || 0;
+  const lastMealAt = actor.getFlag('fit', 'lastMealAt') || 0;
+  const secondsSinceLastMeal = game.time.worldTime - lastMealAt;
+  const daysSinceLastMeal = daysFromSeconds(secondsSinceLastMeal);
 
+  let conMod = actor.system?.abilities?.con?.mod ?? 0;
+
+  console.log(`Days Hungry Calculation dnd5e -> Actor: ${actor.name}, Base Tolerance: ${baseTolerance}, Con Mod: ${conMod}, Days Hungry: ${daysSinceLastMeal - (baseTolerance + conMod)}`);
+
+  return Math.max(daysSinceLastMeal - (baseTolerance + conMod), 0);
+};
 /* =========================
    DND5eSystem Class
    ========================= */
@@ -41,7 +53,10 @@ export default class DND5eSystem {
         console.error(`Actor not found for ID: ${actorId}`);
         return;
       }
-      el.append(`<div class='counter flexrow hunger'><h4>Hunger</h4><div class='counter-value'>${hungerLevel(this.daysHungryForActor(actor))}</div></div>`);
+      const daysHungry = daysHungryForActor(actor);
+      console.log("🛠 Debug: renderActorSheet5eCharacter received actor:", actor, "Days Hungry:", daysHungry);
+      el.append(`<div class='counter flexrow hunger'><h4>Hunger</h4><div class='counter-value'>${hungerLevel(actor)}</div></div>`);
+
     });
   }
 
@@ -52,7 +67,7 @@ export default class DND5eSystem {
 
     // Check if at least one day has passed since the last notification.
     if (daysSinceLastMealNotification >= 1) {
-      const daysHungry = this.daysHungryForActor(actor);
+      const daysHungry = daysHungryForActor(actor);
 
       // Apply or update hunger effects if the actor is hungry.
       if (daysHungry <=5) {
@@ -70,18 +85,6 @@ export default class DND5eSystem {
     }
   }
 
-  // Helper function to calculate days hungry for an actor.
-  daysHungryForActor(actor) {
-    const baseTolerance = game.settings.get('fit', 'baseTolerance'); // Dynamically fetch from settings
-    const lastMealAt = actor.getFlag('fit', 'lastMealAt') || 0;
-    const secondsSinceLastMeal = game.time.worldTime - lastMealAt;
-    const daysSinceLastMeal = daysFromSeconds(secondsSinceLastMeal);
-    const conMod = actor.system.abilities.con.mod || 0; // Corrected: Use actor.system instead of actor.data
-    const hungerTolerance = Math.max(baseTolerance + conMod, 0); // Tolerance is based on Constitution modifier.
-    const daysHungry = Math.max(daysSinceLastMeal - hungerTolerance, 0);
-    return daysHungry;
-  }
-
   // Helper function to configure active effects based on hunger.
   activeEffectConfig(actor, daysHungry) {
     return {
@@ -95,7 +98,7 @@ export default class DND5eSystem {
   }
 // Function to send a hunger notification to the chat.
 async sendHungerNotification(actor) {
-  const daysHungry = this.daysHungryForActor(actor);
+  const daysHungry = daysHungryForActor(actor); // ✅ FIXED: Correct function reference
   const rations = actor.items.find(i => i.name === game.settings.get('fit', 'rationName'));
 
   // Use the actor's last meal timestamp instead of the current time

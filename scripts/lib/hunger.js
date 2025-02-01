@@ -5,25 +5,32 @@ import {
   HUNGER_ICONS,
 } from './constants.js'
 
+
 import { localize } from './utils.js';
 // Function to get the hunger level description based on the number of days hungry
-export const hungerLevel = (daysHungry) => {
-  const level = HUNGER_LEVELS[hungerIndex(daysHungry)] || "unknown"
-  return game.i18n.localize(`fit.hunger.${level}`)
+export const hungerLevel = (actor) => {
+  const level = HUNGER_LEVELS[hungerIndex(actor)] || "unknown";
+  return game.i18n.localize(`${level}`);
 }
 
 // Function to get the hunger icon based on the number of days hungry
-export const hungerIcon = (daysHungry) => {
-  return HUNGER_ICONS[hungerIndex(daysHungry)]
+export const hungerIcon = (actor) => {
+  return HUNGER_ICONS[hungerIndex(actor)];
 }
 
 // Function to calculate the hunger index based on the number of days hungry
-export const hungerIndex = (daysHungry) => {
-  let index = DEFAULT_HUNGER_LEVEL + daysHungry;
-  if (index >= HUNGER_LEVELS.length) {
-    index = HUNGER_LEVELS.length - 1; // Prevent going beyond max hunger level
+import { daysHungryForActor } from './systems/dnd5e.js';
+
+export const hungerIndex = (actor) => {
+ 
+  if (!actor || typeof actor !== "object") {
+      return 0;
   }
-  return index;
+
+  const daysHungry = daysHungryForActor(actor);
+  const index = Math.min(DEFAULT_HUNGER_LEVEL + daysHungry, HUNGER_LEVELS.length - 1);
+
+   return index;
 }
 
 // Function to update the hunger state of an actor based on elapsed time
