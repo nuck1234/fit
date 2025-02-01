@@ -37,10 +37,19 @@ Hooks.once('ready', async () => {
   console.log("fit module ready!");
 
   // Ensure hunger utilities are exposed via the module's API
-  game.modules.get('fit').api = {
-    hungerLevel,
-    hungerIcon,
-    hungerIndex,
+ game.modules.get('fit').api = {
+    hungerLevel: (actor) => {
+        console.log("🛠 API Call: hungerLevel received", actor);
+        return hungerLevel(actor);
+    },
+    hungerIcon: (actor) => {
+        console.log("🛠 API Call: hungerIcon received", actor);
+        return hungerIcon(actor);
+    },
+    hungerIndex: (actor) => {
+        console.log("🛠 API Call: hungerIndex received", actor);
+        return hungerIndex(actor);
+    }
   };
 
   console.log("fit API initialized:", game.modules.get('fit').api);

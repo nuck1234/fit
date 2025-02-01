@@ -10,7 +10,10 @@
     }
   ],
   "esmodules": [
-    "scripts/fit.js"
+    "scripts/fit.js",
+    "scripts/lib/systems/dnd5e.js",
+    "scripts/lib/hunger.js"
+
   ],
   "styles": [
     "styles/module.css"
