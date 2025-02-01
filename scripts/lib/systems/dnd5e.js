@@ -27,7 +27,7 @@ import { localize } from '../utils.js'; // Utility for localization of text.
 
   let conMod = actor.system?.abilities?.con?.mod ?? 0;
 
-  console.log(`Days Hungry Calculation dnd5e -> Actor: ${actor.name}, Base Tolerance: ${baseTolerance}, Con Mod: ${conMod}, Days Hungry: ${daysSinceLastMeal - (baseTolerance + conMod)}`);
+//  console.log(`Days Hungry Calculation dnd5e -> Actor: ${actor.name}, Base Tolerance: ${baseTolerance}, Con Mod: ${conMod}, Days Hungry: ${daysSinceLastMeal - (baseTolerance + conMod)}`);
 
   return Math.max(daysSinceLastMeal - (baseTolerance + conMod), 0);
 };

@@ -1,6 +1,7 @@
 import { hungerLevel } from "./hunger.js";
 import { daysFromSeconds, secondsAgo } from './time.js';
 import { HOUR } from './constants.js';
+import { daysHungryForActor } from './systems/dnd5e.js';
 
 let hungerTable;
 
@@ -43,39 +44,35 @@ export default class HungerTable extends Application {
    */
   getData() {
     const data = game.actors.filter(actor => actor.hasPlayerOwner).map(actor => {
-      const lastMealAt = actor.getFlag('fit', 'lastMealAt') || 0;
-      const secondsSinceLastMeal = game.time.worldTime - lastMealAt;
-      
-  // Calculate days hungry dynamically
-  const baseTolerance = game.settings.get('fit', 'baseTolerance'); // Dynamically fetch from settings
-  const daysSinceLastMeal = Math.floor(secondsSinceLastMeal / 86400);
-  const conMod = actor.system.abilities.con.mod || 0; // Constitution modifier
-  const hungerTolerance = Math.max(baseTolerance + conMod, 0); // Constitution-based tolerance
-  const daysHungry = Math.max(daysSinceLastMeal - hungerTolerance, 0);
-  const hunger = hungerLevel(daysHungry); // Dynamically calculate hunger description
+        const lastMealAt = actor.getFlag('fit', 'lastMealAt') || 0;
+        const secondsSinceLastMeal = game.time.worldTime - lastMealAt;
 
-  
-      console.log("Actor Debug:", {
-        name: actor.name,
-        lastMealAtRaw: lastMealAt,
-        formattedLastMeal: this.formatDate(lastMealAt),
-        secondsSinceLastMeal,
-        hoursSinceLastMeal: this.formatHours(secondsSinceLastMeal),
-        hunger, // Log fetched hunger
-      });
-  
-      return {
-        name: actor.name,
-        lastMealAt: this.formatDate(lastMealAt),
-        hoursSinceLastMeal: this.formatHours(secondsSinceLastMeal),
-        hunger, // Include hunger in the returned data
-      };
+        // ✅ Use imported function instead of duplicate calculation
+        const daysHungry = daysHungryForActor(actor);
+        const hunger = hungerLevel(actor);
+
+ //       console.log("Actor Debug:", {
+   //         name: actor.name,
+     //       lastMealAtRaw: lastMealAt,
+       //     formattedLastMeal: this.formatDate(lastMealAt),
+         //   secondsSinceLastMeal,
+           // hoursSinceLastMeal: this.formatHours(secondsSinceLastMeal),
+            //hunger, // Log fetched hunger
+        //});
+
+        return {
+            name: actor.name,
+            lastMealAt: this.formatDate(lastMealAt),
+            hoursSinceLastMeal: this.formatHours(secondsSinceLastMeal),
+            hunger, // Include hunger in the returned data
+        };
     });
-  
-    console.log("Hunger Table Data Sent to Template:", data);
-    return { actors: data };
-  }
 
+ //   console.log("Hunger Table Data Sent to Template:", data);
+    return { actors: data };
+}
+     
+  
   /**
    * Converts a timestamp in seconds to a formatted date using the SimpleCalendar API.
    * Falls back to a readable string if SimpleCalendar is unavailable or fails.

@@ -236,7 +236,7 @@ class fit {
 
   showHungerTable() {
     // Display the hunger table for the GM via button, not automatic hooks
-    console.log("Activating Hunger Table via button with system:", this.system);
+   // console.log("Activating Hunger Table via button with system:", this.system);
     HungerTable.activate(this.system);
   }
 
@@ -250,7 +250,7 @@ class fit {
 
 // Add a button to the Scene Controls for toggling the Hunger Table
 Hooks.on("getSceneControlButtons", (controls) => {
-  console.log("Scene Controls BEFORE addition:", controls);
+ // console.log("Scene Controls BEFORE addition:", controls);
 
   // Find the Token Controls group
   const tokenControls = controls.find((c) => c.name === "token");
@@ -269,14 +269,14 @@ Hooks.on("getSceneControlButtons", (controls) => {
     tooltip: "Toggle Hunger Table", // Tooltip description
     onClick: (isActive) => {
       if (isActive) {
-        console.log("Hunger Table toggled ON");
+    //    console.log("Hunger Table toggled ON");
         if (typeof game.fit?.showHungerTable === "function") {
           game.fit.showHungerTable(); // Show the Hunger Table
         } else {
           console.error("Hunger Table activation function not found.");
         }
       } else {
-        console.log("Hunger Table toggled OFF");
+  //      console.log("Hunger Table toggled OFF");
         if (ui.windows) {
           const hungerTableWindow = Object.values(ui.windows).find(
             (w) => w.options.title === "Hunger Table"
@@ -291,5 +291,5 @@ Hooks.on("getSceneControlButtons", (controls) => {
     },
   });
 
-  console.log("Scene Controls AFTER addition:", controls);
+ // console.log("Scene Controls AFTER addition:", controls);
 });
