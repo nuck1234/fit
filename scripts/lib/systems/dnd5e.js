@@ -18,9 +18,9 @@ import {
 
 import {
   trackExhaustion
-} from "../rested.js"; // Function to track exhaustion without modifying the UI.
-// Functions and utilities for managing exhaustion levels and effects.
+} from "../rested.js"; // Function to track exhaustion
 
+// Functions and utilities for managing exhaustion levels and effects.
 import { localize } from '../utils.js'; // Utility for localization of text.
 
  // Helper function to calculate days hungry for an actor.
@@ -117,7 +117,7 @@ export default class DND5eSystem {
       const daysHungry = daysHungryForActor(actor);
 
       // Apply or update hunger effects if the actor is hungry.
-      if (daysHungry <=5) {
+      if (daysHungry >= 1 && daysHungry <= 5) {
         const config = this.activeEffectConfig(actor, daysHungry);
         await addOrUpdateHungerEffect(actor, config);
       }
