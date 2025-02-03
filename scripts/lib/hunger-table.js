@@ -52,7 +52,7 @@ export default class HungerTable extends Application {
   const conMod = actor.system.abilities.con.mod || 0; // Constitution modifier
   const hungerTolerance = Math.max(baseTolerance + conMod, 0); // Constitution-based tolerance
   const daysHungry = Math.max(daysSinceLastMeal - hungerTolerance, 0);
-  const hunger = hungerLevel(daysHungry); // Dynamically calculate hunger description
+  const hunger = hungerLevel(actor); // Dynamically calculate hunger description
 
   
       console.log("Actor Debug:", {

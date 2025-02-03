@@ -16,17 +16,59 @@ import {
   addOrUpdateHungerEffect
 } from "../hunger.js"; // Functions and utilities for managing hunger levels and effects.
 
+import {
+  trackExhaustion
+} from "../rested.js"; // Function to track exhaustion without modifying the UI.
+// Functions and utilities for managing exhaustion levels and effects.
+
 import { localize } from '../utils.js'; // Utility for localization of text.
 
+ // Helper function to calculate days hungry for an actor.
+ export const daysHungryForActor = (actor) => {
+  const baseTolerance = game.settings.get('fit', 'baseTolerance') || 0;
+  const lastMealAt = actor.getFlag('fit', 'lastMealAt') || 0;
+  const secondsSinceLastMeal = game.time.worldTime - lastMealAt;
+  const daysSinceLastMeal = daysFromSeconds(secondsSinceLastMeal);
 
+  let conMod = actor.system?.abilities?.con?.mod ?? 0;
+
+  console.log(`Days Hungry Calculation dnd5e -> Actor: ${actor.name}, Base Tolerance: ${baseTolerance}, Con Mod: ${conMod}, Days Hungry: ${daysSinceLastMeal - (baseTolerance + conMod)}`);
+
+  return Math.max(daysSinceLastMeal - (baseTolerance + conMod), 0);
+};
+
+// Helper function to calculate days since last rest for an actor and log to console ONLY.
+export const daysSinceLastRestForActor = (actor) => {
+  let lastRestAt = actor.getFlag('fit', 'lastRestAt') || 0;
+
+  if (!lastRestAt) {
+    lastRestAt = game.time.worldTime;
+    actor.setFlag('fit', 'lastRestAt', lastRestAt);
+    console.log(`🛠 Debug: ${actor.name} - No previous rest found. Setting current time as last rest: ${lastRestAt}`);
+  }
+
+  const secondsSinceLastRest = game.time.worldTime - lastRestAt;
+  const daysSinceLastRest = daysFromSeconds(secondsSinceLastRest);
+
+  console.log(`🛠 Debug: ${actor.name} - Last Rest Timestamp: ${lastRestAt}, Seconds Since Last Rest: ${secondsSinceLastRest}, Days Since Last Rest: ${daysSinceLastRest}`);
+  
+  return Math.max(daysSinceLastRest, 0);
+};
 /* =========================
    DND5eSystem Class
    ========================= */
-// This class handles the integration of hunger mechanics into the D&D 5e system.
+// This class handles the integration of hunger and exhaustion mechanics into the D&D 5e system.
 export default class DND5eSystem {
   constructor(system) {
     this.system = system;
     console.log("Activating Hunger Table with system:", this.system);//Debug
+
+    // Hook into Foundry's long rest system to reset exhaustion
+    Hooks.on('longRest', (actor) => {
+      console.log(`🛠 Debug: ${actor.name} is taking a long rest.`);
+      console.log(`🛠 Debug: Long rest detected for ${actor.name}`);
+      resetExhaustionAfterRest(actor);
+    });
 
     // Adds a "Hunger" counter to the character sheet UI.
     Hooks.on('renderActorSheet5eCharacter', async (app, html, sheet) => {
@@ -41,8 +83,28 @@ export default class DND5eSystem {
         console.error(`Actor not found for ID: ${actorId}`);
         return;
       }
-      el.append(`<div class='counter flexrow hunger'><h4>Hunger</h4><div class='counter-value'>${hungerLevel(this.daysHungryForActor(actor))}</div></div>`);
+      const daysHungry = daysHungryForActor(actor);
+  // Updates exhaustion counter in the character sheet UI.
+      // const daysWithoutRest = daysSinceLastRestForActor(actor);
+
+      console.log("🛠 Debug: renderActorSheet5eCharacter received actor:", actor, "Days Hungry:", daysHungry);
+      el.append(`<div class='counter flexrow hunger'><h4>Hunger</h4><div class='counter-value'>${hungerLevel(actor)}</div></div>`);
+    
+       // Ensure exhaustion counter is updated correctly
+       // Track exhaustion separately without modifying UI
+      trackExhaustion(actor);
     });
+  }
+
+  // Function to update exhaustion based on days since last rest.
+    async updateExhaustion(actor, daysWithoutRest) {
+    if (!actor || typeof daysWithoutRest !== 'number') {
+    console.error("Invalid actor or daysWithoutRest input");
+    return;
+    }
+    const exhaustionLevelValue = Math.min(daysWithoutRest, 6);
+    await actor.update({ 'system.attributes.exhaustion': exhaustionLevelValue });
+    console.log(`Exhaustion level updated for ${actor.name}:`, exhaustionLevelValue);
   }
 
   // Main function to evaluate and update an actor's hunger status.
@@ -52,10 +114,10 @@ export default class DND5eSystem {
 
     // Check if at least one day has passed since the last notification.
     if (daysSinceLastMealNotification >= 1) {
-      const daysHungry = this.daysHungryForActor(actor);
+      const daysHungry = daysHungryForActor(actor);
 
       // Apply or update hunger effects if the actor is hungry.
-      if (daysHungry > 0) {
+      if (daysHungry <=5) {
         const config = this.activeEffectConfig(actor, daysHungry);
         await addOrUpdateHungerEffect(actor, config);
       }
@@ -68,18 +130,6 @@ export default class DND5eSystem {
       await actor.setFlag('fit', 'lastMealNotificationAt', game.time.worldTime);
       Hooks.call('evaluateHunger', actor);
     }
-  }
-
-  // Helper function to calculate days hungry for an actor.
-  daysHungryForActor(actor) {
-    const baseTolerance = game.settings.get('fit', 'baseTolerance'); // Dynamically fetch from settings
-    const lastMealAt = actor.getFlag('fit', 'lastMealAt') || 0;
-    const secondsSinceLastMeal = game.time.worldTime - lastMealAt;
-    const daysSinceLastMeal = daysFromSeconds(secondsSinceLastMeal);
-    const conMod = actor.system.abilities.con.mod || 0; // Corrected: Use actor.system instead of actor.data
-    const hungerTolerance = Math.max(baseTolerance + conMod, 0); // Tolerance is based on Constitution modifier.
-    const daysHungry = Math.max(daysSinceLastMeal - hungerTolerance, 0);
-    return daysHungry;
   }
 
   // Helper function to configure active effects based on hunger.
@@ -95,7 +145,7 @@ export default class DND5eSystem {
   }
 // Function to send a hunger notification to the chat.
 async sendHungerNotification(actor) {
-  const daysHungry = this.daysHungryForActor(actor);
+  const daysHungry = daysHungryForActor(actor); // ✅ FIXED: Correct function reference
   const rations = actor.items.find(i => i.name === game.settings.get('fit', 'rationName'));
 
   // Use the actor's last meal timestamp instead of the current time
@@ -110,7 +160,7 @@ async sendHungerNotification(actor) {
     ? `<button data-action="consumeFood" data-actor-id="${actor.id}" data-item-id="${rations.id}">Use Rations</button>`
     : `Find ${game.settings.get('fit', 'rationName')} soon!`;
 
-  const hunger = hungerLevel(daysHungry);
+  const hunger = hungerLevel(actor);
 
   // Build the final chat card content
   const chatContent = `
@@ -140,5 +190,12 @@ async sendHungerNotification(actor) {
 
   return chatContent;
 }
-
+  async updateExhaustion(actor, level) {
+    if (!actor || typeof level !== 'number') {
+    console.error("Invalid actor or level input");
+    return;
+  }
+  await actor.update({ 'system.attributes.exhaustion': level });
+  console.log(`Exhaustion level updated for ${actor.name}:`, level);
+}
 }
