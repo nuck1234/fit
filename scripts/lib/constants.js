@@ -33,6 +33,7 @@ const HUNGER_ICONS = [
 
 // Default hunger level for a character when no hunger effects are applied ("satisfied").
 const DEFAULT_HUNGER_LEVEL = 0;// changed to zero
+const DEFAULT_HUNGER_LEVEL = 0;// changed to zero future implementation use 2
 
 /* =========================
    Exhaustion Levels and Icons
@@ -72,6 +73,14 @@ return EXHAUSTION_LEVELS[level] || "No effect";
   export const REST_FLAGS = {
   lastRestAt: "fit.lastRestAt",
    secondsSinceLastRest: "fit.secondsSinceLastRest",
+
+  return EXHAUSTION_LEVELS[level] || "No effect";
+};
+
+// Time tracking flags for rest
+export const REST_FLAGS = {
+  lastRestAt: "fit.lastRestAt",
+  secondsSinceLastRest: "fit.secondsSinceLastRest",
 };
 
 // Default hunger level for a character when no hunger effects are applied ("satisfied").
@@ -101,4 +110,3 @@ MINUTE,                // Unit of time: 1 minute (MINUTE)
 HOUR,                  // Unit of time: 1 hour (HOUR)
 DAY                    // Unit of time: 1 day (DAY)
 }
-
