@@ -11,6 +11,10 @@ import { localize } from './utils.js';
 export const hungerLevel = (actor) => {
   const level = HUNGER_LEVELS[hungerIndex(actor)] || "unknown";
   return game.i18n.localize(`${level}`);
+  console.log(`🛠 Debug: Hunger Level for ${actor.name}: ${level} (Index: ${hungerIndex(actor)})`);// added for table and chat issue
+  
+  return game.i18n.localize(`${level}`);// added for table and chat issue
+
 }
 
 // Function to get the hunger icon based on the number of days hungry

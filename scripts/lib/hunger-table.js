@@ -44,10 +44,20 @@ export default class HungerTable extends Application {
    */
   getData() {
     const data = game.actors.filter(actor => actor.hasPlayerOwner).map(actor => {
-        const lastMealAt = actor.getFlag('fit', 'lastMealAt') || 0;
-        const secondsSinceLastMeal = game.time.worldTime - lastMealAt;
+      const lastMealAt = actor.getFlag('fit', 'lastMealAt') || 0;
+      const secondsSinceLastMeal = game.time.worldTime - lastMealAt;
+      
+  // Calculate days hungry dynamically
+  const baseTolerance = game.settings.get('fit', 'baseTolerance'); // Dynamically fetch from settings
+  const daysSinceLastMeal = Math.floor(secondsSinceLastMeal / 86400);
+  const conMod = actor.system.abilities.con.mod || 0; // Constitution modifier
+  const hungerTolerance = Math.max(baseTolerance + conMod, 0); // Constitution-based tolerance
+  const daysHungry = Math.max(daysSinceLastMeal - hungerTolerance, 0);
+  const hunger = hungerLevel(actor); // Dynamically calculate hunger description
+  const lastMealAt = actor.getFlag('fit', 'lastMealAt') || 0;
+  const secondsSinceLastMeal = game.time.worldTime - lastMealAt;
 
-        // ✅ Use imported function instead of duplicate calculation
+      // ✅ Use imported function instead of duplicate calculation
         const daysHungry = daysHungryForActor(actor);
         const hunger = hungerLevel(actor);
 
