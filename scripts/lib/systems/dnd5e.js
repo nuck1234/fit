@@ -53,9 +53,6 @@ export const daysSinceLastRestForActor = (actor) => {
   console.log(`🛠 Debug: ${actor.name} - Last Rest Timestamp: ${lastRestAt}, Seconds Since Last Rest: ${secondsSinceLastRest}, Days Since Last Rest: ${daysSinceLastRest}`);
   
   return Math.max(daysSinceLastRest, 0);
-//  console.log(`Days Hungry Calculation dnd5e -> Actor: ${actor.name}, Base Tolerance: ${baseTolerance}, Con Mod: ${conMod}, Days Hungry: ${daysSinceLastMeal - (baseTolerance + conMod)}`);
-
-  return Math.max(daysSinceLastMeal - (baseTolerance + conMod), 0);
 };
 /* =========================
    DND5eSystem Class
@@ -87,7 +84,6 @@ export default class DND5eSystem {
         return;
       }
       const daysHungry = daysHungryForActor(actor);
-
   // Updates exhaustion counter in the character sheet UI.
       // const daysWithoutRest = daysSinceLastRestForActor(actor);
 
@@ -97,10 +93,6 @@ export default class DND5eSystem {
        // Ensure exhaustion counter is updated correctly
        // Track exhaustion separately without modifying UI
       trackExhaustion(actor);
-
-      console.log("🛠 Debug: renderActorSheet5eCharacter received actor:", actor, "Days Hungry:", daysHungry);
-      el.append(`<div class='counter flexrow hunger'><h4>Hunger</h4><div class='counter-value'>${hungerLevel(actor)}</div></div>`);
-
     });
   }
 
