@@ -13,14 +13,16 @@ import {
 import {
   hungerLevel,
   hungerIcon,
-  addOrUpdateHungerEffect
+  addOrUpdateHungerEffect,
+  removeHungerEffects
+
 } from "../hunger.js"; // Functions and utilities for managing hunger levels and effects.
 
 import {
   trackExhaustion
-} from "../rested.js"; // Function to track exhaustion
-
+} from "../rested.js"; // Function to track exhaustion without modifying the UI.
 // Functions and utilities for managing exhaustion levels and effects.
+
 import { localize } from '../utils.js'; // Utility for localization of text.
 
  // Helper function to calculate days hungry for an actor.
@@ -118,8 +120,11 @@ export default class DND5eSystem {
 
       // Apply or update hunger effects if the actor is hungry.
       if (daysHungry >= 1 && daysHungry <= 5) {
+        await removeHungerEffects(actor); // ✅ Ensure old effect is removed before applying new one
         const config = this.activeEffectConfig(actor, daysHungry);
         await addOrUpdateHungerEffect(actor, config);
+    } else {
+        await removeHungerEffects(actor); // ✅ Remove effect when hunger is out of range
       }
 
       // Notify the players via chat about the actor's hunger status.
@@ -132,17 +137,17 @@ export default class DND5eSystem {
     }
   }
 
-  // Helper function to configure active effects based on hunger.
-  activeEffectConfig(actor, daysHungry) {
-    return {
-      icon: hungerIcon(daysHungry),
-      label: localize('hungerEffect'),
-      changes: [
-        { key: 'system.attributes.hp.max', mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: -daysHungry } // Corrected: Use system instead of data, added.max
-      ],
-      duration: { days: daysHungry }
-    };
-  }
+    // Helper function to configure active effects based on hunger.
+    activeEffectConfig(actor, daysHungry) {
+      return {
+        icon: hungerIcon(daysHungry),
+        label: localize('hungerEffect'),
+        changes: [
+          { key: 'system.attributes.hp.tempmax', mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE, value: -daysHungry }
+        ],
+        duration: { rounds: 10 }
+      };
+}
 // Function to send a hunger notification to the chat.
 async sendHungerNotification(actor) {
   const daysHungry = daysHungryForActor(actor); // ✅ FIXED: Correct function reference

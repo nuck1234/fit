@@ -54,18 +54,13 @@ export const activeHungerEffectsFor = (actor) => {
 
 // Function to add or update hunger effects for an actor
 export const addOrUpdateHungerEffect = async (actor, activeEffectConfig) => {
-  let effect;
-  const hungerEffects = activeHungerEffectsFor(actor)
-  if (hungerEffects.length == 0) {
-    effect = await ActiveEffect.create(activeEffectConfig, {parent: actor})
-    await actor.setFlag('fit', 'hungerActiveEffect', effect.id)
-  } else {
-    effect = hungerEffects[0]
-    await effect.update(activeEffectConfig) // Corrected: Added await
+  await removeHungerEffects(actor); // ✅ Ensure previous hunger effects are removed
+  let effect = await ActiveEffect.create(activeEffectConfig, { parent: actor });
+  await actor.setFlag('fit', 'hungerActiveEffect', effect.id);
+  Hooks.call('addOrUpdateHungerEffect', actor, effect);
   }
 
-  Hooks.call('addOrUpdateHungerEffect', actor, effect)
-}
+  
 
 // Function to consume food and reset the hunger state of an actor
 export const consumeFood = async (actor) => {
@@ -77,18 +72,26 @@ export const consumeFood = async (actor) => {
   
 // Function to remove hunger effects from an actor
 export const removeHungerEffects = async (actor) => {
-  const hungerEffectLabel = localize('hungerEffect'); // Get the expected label dynamically
+  const hungerEffectLabel = localize('hungerEffect');
 
-  for (const effect of actor.effects) {
-    if (effect.name === hungerEffectLabel) { // Use effect.name instead of effect.label
-      await effect.delete(); // Corrected: Added await
+  // Get existing hunger effects
+  const hungerEffects = actor.effects.filter(effect => effect.name === hungerEffectLabel);
+
+  for (const effect of hungerEffects) {
+    if (!actor.effects.has(effect.id)) {
+      console.warn(`⚠️ Warning: Hunger Effect ID ${effect.id} does not exist for ${actor.name}. Skipping deletion.`);
+      continue;
     }
+    console.log(`🛠 Debug: Removing Hunger Effect from ${actor.name}: ${effect.name}`);
+    await effect.delete();
   }
-    // Clear the hungerActiveEffect flag
-  await actor.setFlag('fit', 'hungerActiveEffect', null)
-  
-  // Trigger the hook for hunger effect removal
-  Hooks.call('removeHungerEffects', actor)
+
+  // Clear the hungerActiveEffect flag if effects were found
+  if (hungerEffects.length > 0) {
+    await actor.setFlag('fit', 'hungerActiveEffect', null);
+  }
+
+  Hooks.call('removeHungerEffects', actor);
 }
 
 // Function to initialize the hunger state of an actor
