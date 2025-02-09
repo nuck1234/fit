@@ -1,17 +1,11 @@
 // Import necessary modules and constants
 import registerSettings from "./lib/settings.js";
 import { DAY } from "./lib/constants.js";
-import { consumeFood, initializeHunger, updateHunger, unsetHunger, hungerLevel, hungerIcon, hungerIndex } from "./lib/hunger.js";
+import { consumeFood, initializeHunger, updateHunger, unsetHunger, hungerLevel, hungerIcon, hungerIndex, evaluateHunger } from "./lib/hunger.js";
 import { preloadTemplates } from './lib/preloadTemplates.js';
 import HungerTable from './lib/hunger-table.js';
 import DND5eSystem from './lib/systems/dnd5e.js';
 
-// A no-operation system class for unsupported game systems
-class NoOpSystem {
-  async evaluateHunger(actor) {
-    return;
-  }
-}
 
 Hooks.once('init', async () => {
   console.log("fit module initializing...");
@@ -96,52 +90,6 @@ class fit {
     Hooks.on('preDeleteToken', async (document, data) => {
       const actor = game.actors.get(document.actorId);
       // Placeholder for clearing hunger timer logic - this.clearHungerTimer(actor)
-    });
-
-    let _sessionTime = 0;
-    const EVAL_FREQUENCY = 30;
-
-    // Hook to evaluate hunger periodically based on elapsed world time
-    Hooks.on('updateWorldTime', async (seconds, elapsed) => {
-      console.log('updateWorldTime triggered:', { seconds, elapsed });
-      _sessionTime += elapsed;
-      if (_sessionTime < EVAL_FREQUENCY) return;
-      _sessionTime = 0;
-
-      if (!game.scenes.active) return;
-      if (!game.user.isGM) return;
-
-      const activeUsers = game.users.filter(user => user.active && !user.isGM);
-
-      game.scenes.active.tokens.forEach(async token => {
-        const actor = game.actors.get(token.actorId);
-        // We want to skip non-actors and non-player controlled characters
-        if (typeof actor === 'undefined') return;
-        if (!actor.hasPlayerOwner) return;
-
-        // We want to reset hunger in these two circumstances
-        // We skipped backwards by more than 5m
-        if (elapsed < -300) {
-          await initializeHunger(actor);
-          return;
-        }
-
-        // We skipped forward more than a day
-        //if (elapsed > DAY * 2) {
-        //  await initializeHunger(actor);
-        //console.log(`Skipping forward ${elapsed} seconds without resetting hunger.`);  
-        //return;
-        //}
-
-        // We also want to skip any player who is not logged in if skipMissingPlayers is on
-        let activeUser;
-        activeUser = activeUsers.find(user => actor.testUserPermission(user, "OWNER"));
-        if (!activeUser && game.settings.get('fit', 'skipMissingPlayers')) return;
-
-        await updateHunger(actor, elapsed);
-
-        await this.system.evaluateHunger(actor);
-      });
     });
 
     // Hook to handle item updates related to rations
