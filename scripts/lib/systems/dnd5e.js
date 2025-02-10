@@ -109,6 +109,34 @@ export default class DND5eSystem {
     console.log(`Exhaustion level updated for ${actor.name}:`, exhaustionLevelValue);
   }
 
+  // Main function to evaluate and update an actor's hunger status.
+  async evaluateHunger(actor) {
+    const lastMealNotificationAt = actor.getFlag('fit', 'lastMealNotificationAt') || 0;
+    const daysSinceLastMealNotification = daysFromSeconds(game.time.worldTime - lastMealNotificationAt);
+
+    // Check if at least one day has passed since the last notification.
+    if (daysSinceLastMealNotification >= 1) {
+      const daysHungry = daysHungryForActor(actor);
+
+      // Apply or update hunger effects if the actor is hungry.
+      if (daysHungry >= 1 && daysHungry <= 5) {
+        await removeHungerEffects(actor); // ✅ Ensure old effect is removed before applying new one
+        const config = this.activeEffectConfig(actor, daysHungry);
+        await addOrUpdateHungerEffect(actor, config);
+    } else {
+        await removeHungerEffects(actor); // ✅ Remove effect when hunger is out of range
+      }
+
+      // Notify the players via chat about the actor's hunger status.
+         const chatContent = await this.sendHungerNotification(actor); // This helper function was added to build and return the chat message content, including hunger status and rations information.
+         hungerChatMessage(chatContent, actor);
+
+      // Update the flag to track the last notification time.
+      await actor.setFlag('fit', 'lastMealNotificationAt', game.time.worldTime);
+      Hooks.call('evaluateHunger', actor);
+    }
+  }
+
     // Helper function to configure active effects based on hunger.
     activeEffectConfig(actor, daysHungry) {
       return {

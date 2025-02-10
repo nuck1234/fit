@@ -5,11 +5,6 @@ import {
   HUNGER_ICONS,
 } from './constants.js'
 
-import { daysFromSeconds, secondsAgo } from './time.js';
-
-let _sessionTime = 0; // ✅ Tracks elapsed time for hunger updates
-const EVAL_FREQUENCY = 30; // ✅ Adjust as needed (default: 1 hour in seconds)
-
 
 import { localize } from './utils.js';
 // Function to get the hunger level description based on the number of days hungry
@@ -51,32 +46,6 @@ export const updateHunger = async (actor, elapsed) => {
 
   Hooks.call('updateHunger', actor)
 }
-export async function evaluateHunger(actor) {
-  console.log(`🛠 Debug: Evaluating hunger for ${actor.name}`);
-
-  const lastMealNotificationAt = actor.getFlag('fit', 'lastMealNotificationAt') || 0;
-  const daysSinceLastMealNotification = daysFromSeconds(game.time.worldTime - lastMealNotificationAt);
-
-  if (daysSinceLastMealNotification >= 1) {
-      const daysHungry = daysHungryForActor(actor);
-
-      if (daysHungry >= 1) {
-          await removeHungerEffects(actor);
-          if (daysHungry <= 5) {
-              const config = activeEffectConfig(actor, daysHungry);
-              await addOrUpdateHungerEffect(actor, config);
-          } else {
-              console.warn(`⚠️ ${actor.name} is starving! Apply extreme effects here.`);
-          }
-      } else {
-          await removeHungerEffects(actor);
-      }
-
-      await actor.setFlag('fit', 'lastMealNotificationAt', game.time.worldTime);
-      Hooks.call('evaluateHunger', actor);
-  }
-}
-
 
 // Function to get active hunger effects for an actor
 export const activeHungerEffectsFor = (actor) => {
@@ -144,35 +113,3 @@ export const unsetHunger = async (actor) => {
   }
   Hooks.call('unsetHunger', actor)
 }
-// Hook to evaluate hunger periodically based on elapsed world time
-Hooks.on('updateWorldTime', async (seconds, elapsed) => {
-  console.log('updateWorldTime triggered in hunger.js:', { seconds, elapsed });
-
-  _sessionTime += elapsed;
-  if (_sessionTime < EVAL_FREQUENCY) return;
-  _sessionTime = 0;
-
-  if (!game.scenes.active) return;
-  if (!game.user.isGM) return;
-
-  const activeUsers = game.users.filter(user => user.active && !user.isGM);
-
-  game.scenes.active.tokens.forEach(async token => {
-    const actor = game.actors.get(token.actorId);
-    // We want to skip non-actors and non-player controlled characters
-    if (typeof actor === 'undefined') return;
-    if (!actor.hasPlayerOwner) return;
-
-    // Reset hunger if time skips backward more than 5 minutes
-    if (elapsed < -300) {
-      await initializeHunger(actor);
-      return;
-    }
-    // We also want to skip any player who is not logged in if skipMissingPlayers is on
-    let activeUser = activeUsers.find(user => actor.testUserPermission(user, "OWNER"));
-    if (!activeUser && game.settings.get('fit', 'skipMissingPlayers')) return;
-
-    await updateHunger(actor, elapsed);
-    await evaluateHunger(actor);
-  });
-});
