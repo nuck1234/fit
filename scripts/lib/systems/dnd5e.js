@@ -35,7 +35,7 @@ import { localize } from '../utils.js'; // Utility for localization of text.
   return Math.max(daysSinceLastMeal - (baseTolerance + conMod), 0);
 };*/
 
-// Helper function to calculate days since last rest for an actor and log to console ONLY.
+/* Helper function to calculate days since last rest for an actor and log to console ONLY.
 export const daysSinceLastRestForActor = (actor) => {
   let lastRestAt = actor.getFlag('fit', 'lastRestAt') || 0;
 
@@ -51,7 +51,7 @@ export const daysSinceLastRestForActor = (actor) => {
   console.log(`🛠 Debug: ${actor.name} - Last Rest Timestamp: ${lastRestAt}, Seconds Since Last Rest: ${secondsSinceLastRest}, Days Since Last Rest: ${daysSinceLastRest}`);
   
   return Math.max(daysSinceLastRest, 0);
-};
+};*/
 /* =========================
    DND5eSystem Class
    ========================= */

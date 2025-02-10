@@ -7,7 +7,27 @@ import {
   EXHAUSTION_ICONS // Ensure exhaustion icons are imported for consistency
 } from './constants.js';
 
-import { daysSinceLastRestForActor } from './systems/dnd5e.js';
+import { secondsAgo, daysFromSeconds } from "./time.js"; // Utility functions to calculate time differences.
+//import { daysSinceLastRestForActor } from './systems/dnd5e.js';
+
+export const daysSinceLastRestForActor = (actor) => {
+  let lastRestAt = actor.getFlag('fit', 'lastRestAt') || 0;
+
+  if (!lastRestAt) {
+    lastRestAt = game.time.worldTime;
+    actor.setFlag('fit', 'lastRestAt', lastRestAt);
+    console.log(`🛠 Debug: ${actor.name} - No previous rest found. Setting current time as last rest: ${lastRestAt}`);
+  }
+
+  const secondsSinceLastRest = game.time.worldTime - lastRestAt;
+  const daysSinceLastRest = daysFromSeconds(secondsSinceLastRest);
+
+  console.log(`🛠 Debug: ${actor.name} - Last Rest Timestamp: ${lastRestAt}, Seconds Since Last Rest: ${secondsSinceLastRest}, Days Since Last Rest: ${daysSinceLastRest}`);
+  
+  return Math.max(daysSinceLastRest, 0);
+};
+
+
 
 // Function to get the exhaustion level description based on the number of days without rest
 export const exhaustionLevel = (actor) => {
