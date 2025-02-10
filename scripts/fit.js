@@ -5,6 +5,7 @@ import { consumeFood, initializeHunger, updateHunger, unsetHunger, hungerLevel, 
 import { preloadTemplates } from './lib/preloadTemplates.js';
 import HungerTable from './lib/hunger-table.js';
 import DND5eSystem from './lib/systems/dnd5e.js';
+import { trackExhaustion } from "./lib/rested.js";
 
 // A no-operation system class for unsupported game systems
 class NoOpSystem {
@@ -141,25 +142,13 @@ class fit {
         await updateHunger(actor, elapsed);
 
         await this.system.evaluateHunger(actor);
+        trackExhaustion(actor);
       });
     });
 
     // Hook to handle item updates related to rations
     Hooks.on('preUpdateItem', async (item, change) => {
-      // Original Code: Checks if an item's sorting is changed or the ration is consumed.
-      /*
-      if (change.hasOwnProperty('sort')) return;
-
-      if (game.settings.get('fit', 'rationName') === item.name) {
-        if (item.system.uses.value === change.system.uses.value + 1) {
-          const actor = await game.actors.get(item.actor.id);
-          await consumeFood(actor);
-        }
-      }
-      */
-
-      // New Code: Enhanced logic for handling item updates.
-      // Skip if the change is related to item sorting (not consumption)
+  
       if (change.hasOwnProperty('sort')) return; // Ignore reordering
 
       // Check if the item's name matches the configured ration name
