@@ -4,9 +4,25 @@ import {
   HUNGER_LEVELS,
   HUNGER_ICONS,
 } from './constants.js'
-
+import { daysFromSeconds, secondsAgo } from './time.js';
 
 import { localize } from './utils.js';
+
+ // Helper function to calculate days hungry for an actor.
+ export const daysHungryForActor = (actor) => {
+  const baseTolerance = game.settings.get('fit', 'baseTolerance') || 0;
+  const lastMealAt = actor.getFlag('fit', 'lastMealAt') || 0;
+  const secondsSinceLastMeal = game.time.worldTime - lastMealAt;
+  const daysSinceLastMeal = daysFromSeconds(secondsSinceLastMeal);
+
+  let conMod = actor.system?.abilities?.con?.mod ?? 0;
+
+  console.log(`Days Hungry Calculation dnd5e -> Actor: ${actor.name}, Base Tolerance: ${baseTolerance}, Con Mod: ${conMod}, Days Hungry: ${daysSinceLastMeal - (baseTolerance + conMod)}`);
+
+  return Math.max(daysSinceLastMeal - (baseTolerance + conMod), 0);
+};
+
+
 // Function to get the hunger level description based on the number of days hungry
 export const hungerLevel = (actor) => {
   const level = HUNGER_LEVELS[hungerIndex(actor)] || "unknown";
@@ -23,7 +39,7 @@ export const hungerIcon = (actor) => {
 }
 
 // Function to calculate the hunger index based on the number of days hungry
-import { daysHungryForActor } from './systems/dnd5e.js';
+//import { daysHungryForActor } from './systems/dnd5e.js';
 
 export const hungerIndex = (actor) => {
  

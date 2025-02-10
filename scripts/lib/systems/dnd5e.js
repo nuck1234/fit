@@ -1,20 +1,16 @@
 // This script integrates the hunger mechanics into the D&D 5e system within the Time-2-Eat module.
 // It includes logic to track hunger, notify players, and apply effects based on hunger levels.
 
-import {
-  secondsAgo,
-  daysFromSeconds
-} from "../time.js"; // Utility functions to calculate time differences.
+import { secondsAgo, daysFromSeconds } from "../time.js"; // Utility functions to calculate time differences.
 
-import {
-  hungerChatMessage
-} from "../chat.js"; // Function to send hunger notifications to the chat.
+import { hungerChatMessage } from "../chat.js"; // Function to send hunger notifications to the chat.
 
 import {
   hungerLevel,
   hungerIcon,
   addOrUpdateHungerEffect,
-  removeHungerEffects
+  removeHungerEffects,
+  daysHungryForActor
 
 } from "../hunger.js"; // Functions and utilities for managing hunger levels and effects.
 
@@ -25,7 +21,7 @@ import {
 
 import { localize } from '../utils.js'; // Utility for localization of text.
 
- // Helper function to calculate days hungry for an actor.
+ /* Helper function to calculate days hungry for an actor.
  export const daysHungryForActor = (actor) => {
   const baseTolerance = game.settings.get('fit', 'baseTolerance') || 0;
   const lastMealAt = actor.getFlag('fit', 'lastMealAt') || 0;
@@ -37,7 +33,7 @@ import { localize } from '../utils.js'; // Utility for localization of text.
   console.log(`Days Hungry Calculation dnd5e -> Actor: ${actor.name}, Base Tolerance: ${baseTolerance}, Con Mod: ${conMod}, Days Hungry: ${daysSinceLastMeal - (baseTolerance + conMod)}`);
 
   return Math.max(daysSinceLastMeal - (baseTolerance + conMod), 0);
-};
+};*/
 
 // Helper function to calculate days since last rest for an actor and log to console ONLY.
 export const daysSinceLastRestForActor = (actor) => {
