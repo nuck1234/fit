@@ -10,48 +10,59 @@ import {
   hungerIcon,
   addOrUpdateHungerEffect,
   removeHungerEffects,
-  daysHungryForActor
+  daysHungryForActor  
 
 } from "../hunger.js"; // Functions and utilities for managing hunger levels and effects.
 
-import {
-  trackExhaustion
-} from "../rested.js"; // Function to track exhaustion without modifying the UI.
+import{ setLastRestTime } from "../rested.js"; // Function to set the last rest timestamp for an actor.
+
+//import { updateExhaustion } from "../rested.js"; // Function to track exhaustion without modifying the UI.
 // Functions and utilities for managing exhaustion levels and effects.
 
 import { localize } from '../utils.js'; // Utility for localization of text.
 
- /* Helper function to calculate days hungry for an actor.
- export const daysHungryForActor = (actor) => {
-  const baseTolerance = game.settings.get('fit', 'baseTolerance') || 0;
-  const lastMealAt = actor.getFlag('fit', 'lastMealAt') || 0;
-  const secondsSinceLastMeal = game.time.worldTime - lastMealAt;
-  const daysSinceLastMeal = daysFromSeconds(secondsSinceLastMeal);
+// Function to update exhaustion without modifying the UI
+export const updateExhaustion = (actor) => {
+  exhaustionIndex(actor);
+};
 
-  let conMod = actor.system?.abilities?.con?.mod ?? 0;
-
-  console.log(`Days Hungry Calculation dnd5e -> Actor: ${actor.name}, Base Tolerance: ${baseTolerance}, Con Mod: ${conMod}, Days Hungry: ${daysSinceLastMeal - (baseTolerance + conMod)}`);
-
-  return Math.max(daysSinceLastMeal - (baseTolerance + conMod), 0);
-};*/
-
-/* Helper function to calculate days since last rest for an actor and log to console ONLY.
-export const daysSinceLastRestForActor = (actor) => {
-  let lastRestAt = actor.getFlag('fit', 'lastRestAt') || 0;
-
-  if (!lastRestAt) {
-    lastRestAt = game.time.worldTime;
-    actor.setFlag('fit', 'lastRestAt', lastRestAt);
-    console.log(`🛠 Debug: ${actor.name} - No previous rest found. Setting current time as last rest: ${lastRestAt}`);
+// Function to integrate exhaustion tracking with dnd5e.js
+export const integrateExhaustionWithDnd5e = (actor) => {
+  updateExhaustion(actor);
+};
+// Function to reset exhaustion after a long rest and reset last rest time
+export const resetExhaustionAfterRest = async (actor) => {
+  if (!actor) {
+    return;
   }
-
-  const secondsSinceLastRest = game.time.worldTime - lastRestAt;
-  const daysSinceLastRest = daysFromSeconds(secondsSinceLastRest);
-
-  console.log(`🛠 Debug: ${actor.name} - Last Rest Timestamp: ${lastRestAt}, Seconds Since Last Rest: ${secondsSinceLastRest}, Days Since Last Rest: ${daysSinceLastRest}`);
+  console.log(`🛠 Debug: Resetting exhaustion for ${actor.name}`);
+  await setLastRestTime(actor); // Reset last rest timestamp
+  await actor.update({ 'system.attributes.exhaustion': 0 }); // Reset exhaustion to fully rested
+  await actor.update({ 'system.attributes.hp.temp': 0 }); // Reset temporary hit points
+  await actor.update({ 'system.attributes.hp.tempmax': 0 }); // Reset temporary max hit points
+  };
+  // Hook into Foundry's chat messages to detect long rest messages
+  Hooks.on('createChatMessage', async (message) => {
+    const content = message.content.toLowerCase();
+    if (content.includes("takes a long rest")) {
+      const actor = game.actors.get(message.speaker.actor);
+      if (actor) {
+        console.log(`🛠 Debug: Detected long rest message for ${actor.name}`);
+        resetExhaustionAfterRest(actor);
+      }
+    }
+  });
+  Hooks.once("ready", () => {
+    const fitModule = game.modules.get("fit");
+    if (fitModule) {
+      fitModule.api = fitModule.api || {};
+      Object.assign(fitModule.api, {
+        resetExhaustionAfterRest
+      });
+      console.log("🛠 Debug: fit module API functions exposed for debugging");
+    }
+  });
   
-  return Math.max(daysSinceLastRest, 0);
-};*/
 /* =========================
    DND5eSystem Class
    ========================= */
@@ -82,15 +93,11 @@ export default class DND5eSystem {
         return;
       }
       const daysHungry = daysHungryForActor(actor);
-  // Updates exhaustion counter in the character sheet UI.
-      // const daysWithoutRest = daysSinceLastRestForActor(actor);
-
+  
+      // Updates exhaustion counter in the character sheet UI.
       console.log("🛠 Debug: renderActorSheet5eCharacter received actor:", actor, "Days Hungry:", daysHungry);
       el.append(`<div class='counter flexrow hunger'><h4>Hunger</h4><div class='counter-value'>${hungerLevel(actor)}</div></div>`);
-    
-       // Ensure exhaustion counter is updated correctly
-       // Track exhaustion separately without modifying UI
-      trackExhaustion(actor);
+     
     });
   }
 
@@ -191,12 +198,16 @@ async sendHungerNotification(actor) {
 
   return chatContent;
 }
-  async updateExhaustion(actor, level) {
-    if (!actor || typeof level !== 'number') {
-    console.error("Invalid actor or level input");
-    return;
+
+}
+Hooks.on('updateExhaustionEffect', async (actor, exhaustionLevel) => {
+  console.log(`🛠 Debug: Updating exhaustion effect in UI for ${actor.name}, Level: ${exhaustionLevel}`);
+
+  // 🔄 Update the character's exhaustion attribute in Foundry
+  await actor.update({ "system.attributes.exhaustion": exhaustionLevel });
+
+  // 🔄 Refresh the actor's sheet to reflect exhaustion changes
+  if (actor.sheet) {
+      actor.sheet.render();
   }
-  await actor.update({ 'system.attributes.exhaustion': level });
-  console.log(`Exhaustion level updated for ${actor.name}:`, level);
-}
-}
+});

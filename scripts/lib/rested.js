@@ -8,7 +8,7 @@ import {
 } from './constants.js';
 
 import { secondsAgo, daysFromSeconds } from "./time.js"; // Utility functions to calculate time differences.
-//import { daysSinceLastRestForActor } from './systems/dnd5e.js';
+
 
 export const daysSinceLastRestForActor = (actor) => {
   let lastRestAt = actor.getFlag('fit', 'lastRestAt') || 0;
@@ -27,8 +27,6 @@ export const daysSinceLastRestForActor = (actor) => {
   return Math.max(daysSinceLastRest, 0);
 };
 
-
-
 // Function to get the exhaustion level description based on the number of days without rest
 export const exhaustionLevel = (actor) => {
   return EXHAUSTION_LEVELS[exhaustionIndex(actor)] || "unknown";
@@ -44,33 +42,36 @@ export const exhaustionIndex = (actor) => {
 };
 
 // Function to update exhaustion without modifying the UI
-export const updateExhaustion = (actor) => {
-  exhaustionIndex(actor);
-};
+//export const updateExhaustion = (actor) => {
+ // exhaustionIndex(actor);
+//};
 
 // Function to integrate exhaustion tracking with dnd5e.js
-export const integrateExhaustionWithDnd5e = (actor) => {
-  updateExhaustion(actor);
-};
+//export const integrateExhaustionWithDnd5e = (actor) => {
+//  updateExhaustion(actor);
+//};
 
-// Function to be used in dnd5e.js for exhaustion tracking
-export const trackExhaustion = (actor) => {
+// Function to be used for exhaustion tracking
+export async function trackExhaustion(actor) {
+  console.log(`🛠 Debug: Richard Tracking exhaustion for ${actor.name}`);
+  if (!actor) {
+    console.error("❌ Error: Richard trackExhaustion called with an invalid actor!");
+    return;
+}
+  
   const daysWithoutRest = daysSinceLastRestForActor(actor);
-  
-  // Ensure lastRestAt is set correctly
-  if (!actor.getFlag('fit', 'lastRestAt')) {
-    setLastRestTime(actor);
-  }
-  
-  // Use a separate variable to avoid conflicts with Foundry's built-in exhaustion
-  const calculatedExhaustion = Math.min(daysWithoutRest, EXHAUSTION_LEVELS.length - 1);
+  console.log(`🛠 Debug: Richard Days without rest: ${daysWithoutRest}`);
 
-  console.log(`🛠 Debug: Tracking exhaustion for ${actor.name}`);
-  console.log(`🛠 Debug: Days without rest: ${daysWithoutRest}`);
-  console.log(`🛠 Debug: Calculated exhaustion level: ${calculatedExhaustion}`);
+  let exhaustionLevel = Math.floor(daysWithoutRest / 1); // to be looked at in the future as an en
+  console.log(`🛠 Debug: Richard Calculated exhaustion level: ${exhaustionLevel}`);
+ 
+   // 🔄 Update the actor’s exhaustion directly
+   await actor.update({ "system.attributes.exhaustion": exhaustionLevel });
+   console.log(`🛠 Debug: Exhaustion level updated for ${actor.name}: ${exhaustionLevel}`);
 
-  // Automatically update Foundry's exhaustion field
-  actor.update({ 'system.attributes.exhaustion': calculatedExhaustion });
+   // 🔄 Trigger the Hook to update UI
+   Hooks.call('updateExhaustionEffect', actor, exhaustionLevel);
+
 };
 
 // Function to update the last rest time for an actor
@@ -83,7 +84,7 @@ export const setLastRestTime = async (actor) => {
   await actor.setFlag('fit', 'lastRestAt', now);
 };
 
-// Function to reset exhaustion after a long rest and reset last rest time
+/* Function to reset exhaustion after a long rest and reset last rest time
 export const resetExhaustionAfterRest = async (actor) => {
   if (!actor) {
     return;
@@ -93,9 +94,9 @@ export const resetExhaustionAfterRest = async (actor) => {
   await actor.update({ 'system.attributes.exhaustion': 0 }); // Reset exhaustion to fully rested
   await actor.update({ 'system.attributes.hp.temp': 0 }); // Reset temporary hit points
   await actor.update({ 'system.attributes.hp.tempmax': 0 }); // Reset temporary max hit points
-};
+};*/
 
-// Hook into Foundry's chat messages to detect long rest messages
+/* Hook into Foundry's chat messages to detect long rest messages
 Hooks.on('createChatMessage', async (message) => {
   const content = message.content.toLowerCase();
   if (content.includes("takes a long rest")) {
@@ -105,7 +106,7 @@ Hooks.on('createChatMessage', async (message) => {
       resetExhaustionAfterRest(actor);
     }
   }
-});
+});*/
 
 // Ensure API functions are registered under fit module
 Hooks.once("ready", () => {
@@ -113,7 +114,6 @@ Hooks.once("ready", () => {
   if (fitModule) {
     fitModule.api = fitModule.api || {};
     Object.assign(fitModule.api, {
-      resetExhaustionAfterRest,
       setLastRestTime,
       trackExhaustion
     });
