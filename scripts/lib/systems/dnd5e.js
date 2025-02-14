@@ -1,6 +1,7 @@
 // This script integrates the hunger mechanics into the D&D 5e system within the Time-2-Eat module.
 // It includes logic to track hunger, notify players, and apply effects based on hunger levels.
 
+
 import { secondsAgo, daysFromSeconds } from "../time.js"; // Utility functions to calculate time differences.
 
 import { hungerChatMessage } from "../chat.js"; // Function to send hunger notifications to the chat.
@@ -30,57 +31,51 @@ export const updateExhaustion = (actor) => {
 export const integrateExhaustionWithDnd5e = (actor) => {
   updateExhaustion(actor);
 };
-// Function to reset exhaustion after a long rest and reset last rest time
-export const resetExhaustionAfterRest = async (actor) => {
-  if (!actor) {
-    return;
-  }
-  console.log(`🛠 Debug: Resetting exhaustion for ${actor.name}`);
-  await setLastRestTime(actor); // Reset last rest timestamp
-  await actor.update({ 'system.attributes.exhaustion': 0 }); // Reset exhaustion to fully rested
-  await actor.update({ 'system.attributes.hp.temp': 0 }); // Reset temporary hit points
-  await actor.update({ 'system.attributes.hp.tempmax': 0 }); // Reset temporary max hit points
-  };
-  // Hook into Foundry's chat messages to detect long rest messages
-  Hooks.on('createChatMessage', async (message) => {
-    const content = message.content.toLowerCase();
-    if (content.includes("takes a long rest")) {
-      const actor = game.actors.get(message.speaker.actor);
-      if (actor) {
-        console.log(`🛠 Debug: Detected long rest message for ${actor.name}`);
-        resetExhaustionAfterRest(actor);
-      }
-    }
-  });
-  Hooks.once("ready", () => {
-    const fitModule = game.modules.get("fit");
-    if (fitModule) {
-      fitModule.api = fitModule.api || {};
-      Object.assign(fitModule.api, {
-        resetExhaustionAfterRest
-      });
-      console.log("🛠 Debug: fit module API functions exposed for debugging");
-    }
-  });
+
+
+ 
   
 /* =========================
    DND5eSystem Class
    ========================= */
 // This class handles the integration of hunger and exhaustion mechanics into the D&D 5e system.
-export default class DND5eSystem {
-  constructor(system) {
-    this.system = system;
-    console.log("Activating Hunger Table with system:", this.system);//Debug
+  export default class DND5eSystem {
+    constructor(system) {
+      this.system = system;
+      console.log("Activating Hunger Table with system:", this.system); // Debug
+  
 
-    // Hook into Foundry's long rest system to reset exhaustion
+
+      // ✅ Hook into Foundry's long rest system to reset exhaustion
     Hooks.on('longRest', (actor) => {
-      console.log(`🛠 Debug: ${actor.name} is taking a long rest.`);
-      console.log(`🛠 Debug: Long rest detected for ${actor.name}`);
-      resetExhaustionAfterRest(actor);
+      console.log(`🛠 Debug: Long rest detected for ${actor.name}`); // ✅ Ensures hook is firing
+      this.resetExhaustionAfterRest(actor);
     });
 
-    // Adds a "Hunger" counter to the character sheet UI.
-    Hooks.on('renderActorSheet5eCharacter', async (app, html, sheet) => {
+    // ✅ Hook into character sheet rendering to add Hunger counter
+    Hooks.on('renderActorSheet5eCharacter', (app, html, sheet) => this.updateCharacterSheet(app, html, sheet));
+  }
+  /* -------------------------
+   Exhauastion Mechanics
+  ------------------------- */
+     
+    // ✅ Function must be async because it contains await
+    async resetExhaustionAfterRest(actor) {
+      if (!actor) return;
+  
+      console.log(`🛠 Debug: Resetting exhaustion for ${actor.name}`);
+      await setLastRestTime(actor); // ✅ Reset last rest timestamp
+      await actor.update({ 'system.attributes.exhaustion': 0 }); // ✅ Reset exhaustion
+      await actor.update({ 'system.attributes.hp.temp': 0 }); // ✅ Reset temporary HP
+      await actor.update({ 'system.attributes.hp.tempmax': 0 }); // ✅ Reset temporary max HP
+    }
+  
+    /* -------------------------
+    Hunger Mechanics
+    ------------------------- */
+
+    // ✅ Function to update the character sheet UI
+    updateCharacterSheet(app, html, sheet) {
       const el = $(html).find('.counters');
       const actorId = sheet.actor?._id;
       if (!actorId) {
@@ -93,30 +88,22 @@ export default class DND5eSystem {
         return;
       }
       const daysHungry = daysHungryForActor(actor);
-  
-      // Updates exhaustion counter in the character sheet UI.
+    
       console.log("🛠 Debug: renderActorSheet5eCharacter received actor:", actor, "Days Hungry:", daysHungry);
+    
+      // ✅ FIX: Remove existing "Hunger" counter before adding a new one
+      $(html).find('.counter.hunger').remove();
+    
+      // ✅ Add the Hunger UI element only once
       el.append(`<div class='counter flexrow hunger'><h4>Hunger</h4><div class='counter-value'>${hungerLevel(actor)}</div></div>`);
-     
-    });
-  }
-
-  // Function to update exhaustion based on days since last rest.
-    async updateExhaustion(actor, daysWithoutRest) {
-    if (!actor || typeof daysWithoutRest !== 'number') {
-    console.error("Invalid actor or daysWithoutRest input");
-    return;
     }
-    const exhaustionLevelValue = Math.min(daysWithoutRest, 6);
-    await actor.update({ 'system.attributes.exhaustion': exhaustionLevelValue });
-    console.log(`Exhaustion level updated for ${actor.name}:`, exhaustionLevelValue);
-  }
+  
 
-  // Main function to evaluate and update an actor's hunger status.
-  async evaluateHunger(actor) {
+    // Main function to evaluate and update an actor's hunger status.
+    async evaluateHunger(actor) {
     const lastMealNotificationAt = actor.getFlag('fit', 'lastMealNotificationAt') || 0;
     const daysSinceLastMealNotification = daysFromSeconds(game.time.worldTime - lastMealNotificationAt);
-
+  
     // Check if at least one day has passed since the last notification.
     if (daysSinceLastMealNotification >= 1) {
       const daysHungry = daysHungryForActor(actor);
@@ -139,7 +126,7 @@ export default class DND5eSystem {
       Hooks.call('evaluateHunger', actor);
     }
   }
-
+  
     // Helper function to configure active effects based on hunger.
     activeEffectConfig(actor, daysHungry) {
       return {
@@ -151,6 +138,7 @@ export default class DND5eSystem {
         duration: { rounds: 10 }
       };
 }
+
 // Function to send a hunger notification to the chat.
 async sendHungerNotification(actor) {
   const daysHungry = daysHungryForActor(actor); // ✅ FIXED: Correct function reference
@@ -168,9 +156,9 @@ async sendHungerNotification(actor) {
     ? `<button data-action="consumeFood" data-actor-id="${actor.id}" data-item-id="${rations.id}">Use Rations</button>`
     : `Find ${game.settings.get('fit', 'rationName')} soon!`;
 
-  const hunger = hungerLevel(actor);
+   const hunger = hungerLevel(actor);
 
-  // Build the final chat card content
+// Build the final chat card content
   const chatContent = `
     <div class='dnd5e chat-card'>
       <div class='card-header flexrow'>
@@ -198,9 +186,15 @@ async sendHungerNotification(actor) {
 
   return chatContent;
 }
-
 }
-Hooks.on('updateExhaustionEffect', async (actor, exhaustionLevel) => {
+const dnd5eSystem = new DND5eSystem(game.system);
+
+/* =========================
+   GLOBAL HOOKS (OUTSIDE THE CLASS)
+   ========================= */
+
+  // Hook into Foundry's updateExhaustionEffect to update the character's exhaustion attribute
+  Hooks.on('updateExhaustionEffect', async (actor, exhaustionLevel) => {
   console.log(`🛠 Debug: Updating exhaustion effect in UI for ${actor.name}, Level: ${exhaustionLevel}`);
 
   // 🔄 Update the character's exhaustion attribute in Foundry
@@ -211,3 +205,42 @@ Hooks.on('updateExhaustionEffect', async (actor, exhaustionLevel) => {
       actor.sheet.render();
   }
 });
+    // ✅ Hook into Foundry's chat messages to detect long rest messages
+Hooks.on('createChatMessage', async (message) => {
+  const content = message.content.toLowerCase();
+  if (content.includes("takes a long rest")) {
+    const actor = game.actors.get(message.speaker.actor);
+    if (actor) {
+      console.log(`🛠 Debug: Detected long rest message for ${actor.name}`);
+
+      // ✅ Always use the pre-defined instance
+      dnd5eSystem.resetExhaustionAfterRest(actor);
+    }
+  }
+});
+
+    // ✅ Hook to expose API functions after Foundry is ready
+    Hooks.once("ready", () => {
+      console.log("🛠 Debug: DND5eSystem is ready");
+      const fitModule = game.modules.get("fit");
+      if (fitModule) {
+        fitModule.api = fitModule.api || {};
+        Object.assign(fitModule.api, {
+          resetExhaustionAfterRest: dnd5eSystem.resetExhaustionAfterRest.bind(dnd5eSystem)
+        });
+        console.log("🛠 Debug: fit module API functions exposed");
+      }
+    });
+  
+  // ✅ FINAL Correct closing brace for the class
+
+
+
+
+
+
+
+
+ 
+
+  
