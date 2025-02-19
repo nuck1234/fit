@@ -4,7 +4,7 @@ import { DAY } from "./lib/constants.js";
 import { consumeFood, initializeHunger, updateHunger, unsetHunger, hungerLevel, hungerIcon, hungerIndex } from "./lib/hunger.js";
 import { preloadTemplates } from './lib/preloadTemplates.js';
 import HungerTable from './lib/hunger-table.js';
-import DND5eSystem from './lib/systems/dnd5e.js';
+import { evaluateHunger } from './lib/systems/dnd5e.js';
 import { trackExhaustion } from "./lib/rested.js";
 
 // A no-operation system class for unsupported game systems
@@ -16,21 +16,9 @@ class NoOpSystem {
 
 Hooks.once('init', async () => {
   console.log("fit module initializing...");
-  let system;
 
-  // Determine the system type based on the game system ID
-  switch (game.system.id) {
-    case 'dnd5e':
-      system = new DND5eSystem(game.system);
-      break;
-
-    default:
-      system = new NoOpSystem(game.system);
-      break;
-  }
-  
-    // Initialize the module and assign it to the game object
-  game.fit = new fit(system);
+  // ✅ Initialize the module without system
+  game.fit = new fit();
   game.fit.init();
 });
 
@@ -57,9 +45,8 @@ Hooks.once('ready', async () => {
 });
 
 class fit {
-  constructor(system) {
-    // Store the current game system instance
-    this.system = system;
+  constructor() {
+    console.log("fit module initialized.");
   }
 
   async init() {
@@ -141,7 +128,7 @@ class fit {
 
         await updateHunger(actor, elapsed);
 
-        await this.system.evaluateHunger(actor);
+        await evaluateHunger(actor); // ✅ Now calls the standalone function
         trackExhaustion(actor);
       });
     });

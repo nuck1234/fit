@@ -9,7 +9,6 @@ import {
 
 import { secondsAgo, daysFromSeconds } from "./time.js"; // Utility functions to calculate time differences.
 
-
 export const daysSinceLastRestForActor = (actor) => {
   let lastRestAt = actor.getFlag('fit', 'lastRestAt') || 0;
 
@@ -40,16 +39,6 @@ export const exhaustionIndex = (actor) => {
   const daysWithoutRest = daysSinceLastRestForActor(actor);
   return Math.min(DEFAULT_EXHAUSTION_LEVEL + daysWithoutRest, EXHAUSTION_LEVELS.length - 1);
 };
-
-// Function to update exhaustion without modifying the UI
-//export const updateExhaustion = (actor) => {
- // exhaustionIndex(actor);
-//};
-
-// Function to integrate exhaustion tracking with dnd5e.js
-//export const integrateExhaustionWithDnd5e = (actor) => {
-//  updateExhaustion(actor);
-//};
 
 // Function to be used for exhaustion tracking
 export async function trackExhaustion(actor) {
@@ -84,39 +73,28 @@ export const setLastRestTime = async (actor) => {
   await actor.setFlag('fit', 'lastRestAt', now);
 };
 
-/* Function to reset exhaustion after a long rest and reset last rest time
-export const resetExhaustionAfterRest = async (actor) => {
-  if (!actor) {
-    return;
-  }
-  console.log(`🛠 Debug: Resetting exhaustion for ${actor.name}`);
-  await setLastRestTime(actor); // Reset last rest timestamp
-  await actor.update({ 'system.attributes.exhaustion': 0 }); // Reset exhaustion to fully rested
-  await actor.update({ 'system.attributes.hp.temp': 0 }); // Reset temporary hit points
-  await actor.update({ 'system.attributes.hp.tempmax': 0 }); // Reset temporary max hit points
-};*/
-
-/* Hook into Foundry's chat messages to detect long rest messages
-Hooks.on('createChatMessage', async (message) => {
-  const content = message.content.toLowerCase();
-  if (content.includes("takes a long rest")) {
-    const actor = game.actors.get(message.speaker.actor);
-    if (actor) {
-      console.log(`🛠 Debug: Detected long rest message for ${actor.name}`);
-      resetExhaustionAfterRest(actor);
-    }
-  }
-});*/
-
 // Ensure API functions are registered under fit module
 Hooks.once("ready", () => {
   const fitModule = game.modules.get("fit");
   if (fitModule) {
     fitModule.api = fitModule.api || {};
     Object.assign(fitModule.api, {
-      setLastRestTime,
-      trackExhaustion
+      resetExhaustionAfterRest: resetExhaustionAfterRest // ✅ Calls function directly
     });
     console.log("🛠 Debug: fit module API functions exposed for debugging");
   }
 });
+export async function resetExhaustionAfterRest(actor) {
+  if (!actor) return;
+
+  console.log(`🛠 Debug: Resetting exhaustion for ${actor.name}`);
+
+  // ✅ Set the last rest time to now
+  await setLastRestTime(actor);
+
+  // ✅ Reset exhaustion
+  await actor.update({ "system.attributes.exhaustion": 0 });
+
+  // 🔄 Trigger the Hook to update UI
+  Hooks.call("updateExhaustionEffect", actor);
+}
