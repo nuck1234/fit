@@ -39,29 +39,6 @@ await game.settings.register('fit', 'baseTolerance', {
   default: 1, // Default value is 3 days, per D&D 5e rules.
 });
 
-
-  // Placeholder for thirst-related settings, not yet implemented.
-  // Enables the thirst mechanic and water consumption tracking.
-  // await game.settings.register('fit', 'thirstEnabled', {
-  //   name: "[COMING SOON] Enable Thirst",
-  //   hint: "Also subject players to water rules; players will need to drink water and maintain waterskins",
-  //   scope: "world",
-  //   config: true,
-  //   type: Boolean,
-  //   default: true,
-  // })
-
-  // Placeholder for water consumption setting, paired with the thirst mechanic.
-  // Specifies the amount of water required per day.
-  // await game.settings.register('fit', 'waterPerDay', {
-  //   name: "Water Per Day",
-  //   hint: "Each actor consumes this amount of water per day in charges",
-  //   scope: "world",
-  //   config: true,
-  //   type: Number,
-  //   default: 1,
-  // })
-
   // Register the maximum level of exhaustion that can be applied due to hunger.
   await game.settings.register('fit', 'maxExhaustion', {
     name: "Max Exhaustion to apply",
@@ -81,17 +58,6 @@ await game.settings.register('fit', 'baseTolerance', {
     type: String,
     default: "Rations",
   })
-
-  // Placeholder for the waterskin item name, related to the thirst mechanic.
-  // Specifies the item name used to track water consumption.
-  // await game.settings.register('fit', 'waterName', {
-  //   name: "Waterskin Name",
-  //   hint: "Use this item name for waterskins",
-  //   scope: "world",
-  //   config: true,
-  //   type: String,
-  //   default: "Waterskin",
-  // })
 }
 
-export default registerSettings
+export default registerSettings;
