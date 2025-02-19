@@ -2,7 +2,7 @@
 // It includes logic to track hunger, notify players, and apply effects based on hunger levels.
 
 
-import { secondsAgo, daysFromSeconds } from "../time.js"; // Utility functions to calculate time differences.
+import { daysFromSeconds } from "../time.js"; // Utility functions to calculate time differences.
 import { hungerChatMessage, sendHungerNotification } from "../chat.js"; // Function to send hunger notifications to the chat.
 import { hungerLevel, hungerIcon, addOrUpdateHungerEffect, removeHungerEffects, daysHungryForActor } from "../hunger.js"; // Functions and utilities for managing hunger levels and effects.
 import { resetExhaustionAfterRest, exhaustionIndex } from "../rested.js"; // Function to set the last rest timestamp for an actor.

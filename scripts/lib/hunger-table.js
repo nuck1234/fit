@@ -1,6 +1,4 @@
 import { hungerLevel } from "./hunger.js";
-import { daysFromSeconds, secondsAgo } from './time.js';
-import { HOUR } from './constants.js';
 
 let hungerTable;
 

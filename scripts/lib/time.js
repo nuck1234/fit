@@ -4,9 +4,7 @@
 
 // Import the DAY constant from the constants.js module
 // The DAY constant represents the number of seconds in a day.
-import {
-  DAY
-} from "./constants.js";
+import { DAY } from "./constants.js";
 
 /**
  * Function: secondsAgo

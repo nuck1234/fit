@@ -91,3 +91,34 @@ export async function sendHungerNotification(actor) {
 
     return chatContent;
   }
+  // Hook to handle custom chat interactions for consumption
+       Hooks.on('renderChatLog', async (app, html, data) => {
+        html.on('click', "button[data-action='consumeFood']", async (event) => {
+          event.preventDefault();
+  
+          const actorId = event.target.dataset.actorId;
+          const itemId = event.target.dataset.itemId;
+  
+          const actor = game.actors.get(actorId);
+          const item = actor?.items.get(itemId);
+  
+          if (!actor || !item) {
+            ui.notifications.error("Actor or item not found.");
+            return;
+          }
+  
+          const quantity = item.system.quantity || 0;
+          if (quantity <= 0) {
+            ui.notifications.warn(`${actor.name} has no ${item.name} left to consume.`);
+            return;
+          }
+  
+          // Consume one ration
+          await item.update({ "system.quantity": quantity - 1 });
+          await actor.setFlag('fit', 'lastMealAt', game.time.worldTime);
+  
+          ChatMessage.create({ content: `${actor.name} consumes a ration. Hunger has been reset.` });
+          ui.notifications.info(`${actor.name} has consumed a ration. Remaining: ${quantity - 1}`);
+        });
+      });
+  

@@ -1,8 +1,8 @@
 // This script integrates exhaustion tracking into the D&D 5e system within the Time-2-Eat module.
 // It includes logic to track exhaustion, reset it after a long rest, and log relevant data.
 
-import { DEFAULT_EXHAUSTION_LEVEL, EXHAUSTION_LEVELS, EXHAUSTION_ICONS } from './constants.js';// Ensure exhaustion icons are imported for consistency
-import { secondsAgo, daysFromSeconds } from "./time.js"; // Utility functions to calculate time differences.
+import { DEFAULT_EXHAUSTION_LEVEL, EXHAUSTION_LEVELS, } from './constants.js';// Ensure exhaustion icons are imported for consistency
+import { daysFromSeconds } from "./time.js"; // Utility functions to calculate time differences.
 
 export const daysSinceLastRestForActor = (actor) => {
   let lastRestAt = actor.getFlag('fit', 'lastRestAt') || 0;
