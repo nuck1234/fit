@@ -1,11 +1,6 @@
 // Import necessary constants from the constants.js file
-import {
-  DEFAULT_HUNGER_LEVEL,
-  HUNGER_LEVELS,
-  HUNGER_ICONS,
-} from './constants.js'
+import { DEFAULT_HUNGER_LEVEL, HUNGER_LEVELS, HUNGER_ICONS } from './constants.js'
 import { daysFromSeconds, secondsAgo } from './time.js';
-
 import { localize } from './utils.js';
 
  // Helper function to calculate days hungry for an actor.
@@ -17,7 +12,6 @@ import { localize } from './utils.js';
 
   let conMod = actor.system?.abilities?.con?.mod ?? 0;
 
-  console.log(`Days Hungry Calculation dnd5e -> Actor: ${actor.name}, Base Tolerance: ${baseTolerance}, Con Mod: ${conMod}, Days Hungry: ${daysSinceLastMeal - (baseTolerance + conMod)}`);
 
   return Math.max(daysSinceLastMeal - (baseTolerance + conMod), 0);
 };
@@ -27,7 +21,7 @@ import { localize } from './utils.js';
 export const hungerLevel = (actor) => {
   const level = HUNGER_LEVELS[hungerIndex(actor)] || "unknown";
   return game.i18n.localize(`${level}`);
-  console.log(`🛠 Debug: Hunger Level for ${actor.name}: ${level} (Index: ${hungerIndex(actor)})`);// added for table and chat issue
+ // console.log(`🛠 Debug: Hunger Level for ${actor.name}: ${level} (Index: ${hungerIndex(actor)})`);// added for table and chat issue
   
   return game.i18n.localize(`${level}`);// added for table and chat issue
 
@@ -98,7 +92,7 @@ export const removeHungerEffects = async (actor) => {
       console.warn(`⚠️ Warning: Hunger Effect ID ${effect.id} does not exist for ${actor.name}. Skipping deletion.`);
       continue;
     }
-    console.log(`🛠 Debug: Removing Hunger Effect from ${actor.name}: ${effect.name}`);
+  //  console.log(`🛠 Debug: Removing Hunger Effect from ${actor.name}: ${effect.name}`);
     await effect.delete();
   }
 

@@ -55,14 +55,14 @@ export default class HungerTable extends Application {
   const hunger = hungerLevel(actor); // Dynamically calculate hunger description
 
   
-      console.log("Actor Debug:", {
+     /* console.log("Actor Debug:", {
         name: actor.name,
         lastMealAtRaw: lastMealAt,
         formattedLastMeal: this.formatDate(lastMealAt),
         secondsSinceLastMeal,
         hoursSinceLastMeal: this.formatHours(secondsSinceLastMeal),
         hunger, // Log fetched hunger
-      });
+      });*/
   
       return {
         name: actor.name,
