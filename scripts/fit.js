@@ -114,13 +114,6 @@ class fit {
           return;
         }
 
-        // We skipped forward more than a day
-        //if (elapsed > DAY * 2) {
-        //  await initializeHunger(actor);
-        //console.log(`Skipping forward ${elapsed} seconds without resetting hunger.`);  
-        //return;
-        //}
-
         // We also want to skip any player who is not logged in if skipMissingPlayers is on
         let activeUser;
         activeUser = activeUsers.find(user => actor.testUserPermission(user, "OWNER"));

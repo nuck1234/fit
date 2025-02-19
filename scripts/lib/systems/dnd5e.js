@@ -3,33 +3,10 @@
 
 
 import { secondsAgo, daysFromSeconds } from "../time.js"; // Utility functions to calculate time differences.
-
-import { hungerChatMessage } from "../chat.js"; // Function to send hunger notifications to the chat.
-
-import {
-  hungerLevel,
-  hungerIcon,
-  addOrUpdateHungerEffect,
-  removeHungerEffects,
-  daysHungryForActor  
-
-} from "../hunger.js"; // Functions and utilities for managing hunger levels and effects.
-
-import { resetExhaustionAfterRest } from "../rested.js"; // Function to set the last rest timestamp for an actor.
-import { exhaustionIndex } from "../rested.js"; 
+import { hungerChatMessage, sendHungerNotification } from "../chat.js"; // Function to send hunger notifications to the chat.
+import { hungerLevel, hungerIcon, addOrUpdateHungerEffect, removeHungerEffects, daysHungryForActor } from "../hunger.js"; // Functions and utilities for managing hunger levels and effects.
+import { resetExhaustionAfterRest, exhaustionIndex } from "../rested.js"; // Function to set the last rest timestamp for an actor.
 import { localize } from '../utils.js'; // Utility for localization of text.
-
-// Function to update exhaustion without modifying the UI
-export const updateExhaustion = (actor) => {
-  exhaustionIndex(actor);
-};
-
-// Function to integrate exhaustion tracking with dnd5e.js
-export const integrateExhaustionWithDnd5e = (actor) => {
-  updateExhaustion(actor);
-};
-
-
   
     /* -------------------------
     Hunger Mechanics
@@ -49,7 +26,6 @@ export const integrateExhaustionWithDnd5e = (actor) => {
       }
       const daysHungry = daysHungryForActor(actor);
     
-      console.log("🛠 Debug: renderActorSheet5eCharacter received actor:", actor, "Days Hungry:", daysHungry);
     
       // ✅ FIX: Remove existing "Hunger" counter before adding a new one
       $(html).find('.counter.hunger').remove();
@@ -98,67 +74,26 @@ export const integrateExhaustionWithDnd5e = (actor) => {
         duration: { rounds: 10 }
       };
 }
-// Renders the hunger UI element on the character sheet.
-  Hooks.once('ready', () => {
+  // Renders the hunger UI element on the character sheet.
+    Hooks.once('ready', () => {
     console.log("🛠 Debug: DND5e UI Hooks Initialized");
     Hooks.on('renderActorSheet5eCharacter', (app, html, sheet) => updateCharacterSheet(app, html, sheet));
-});
-
-// Function to send a hunger notification to the chat.
-export async function sendHungerNotification(actor) {
-  const daysHungry = daysHungryForActor(actor); // ✅ FIXED: Correct function reference
-  const rations = actor.items.find(i => i.name === game.settings.get('fit', 'rationName'));
-
-  // Use the actor's last meal timestamp instead of the current time
-  const lastMealAt = actor.getFlag('fit', 'lastMealAt') || 0;
-  const lastMealDate = new Date(lastMealAt * 1000); // Convert seconds to milliseconds for Date object
-  const display = {
-    date: lastMealDate.toLocaleDateString(),
-    time: lastMealDate.toLocaleTimeString(),
-  };
-
-  const actionHtml = rations && rations.system && rations.system.quantity > 0
-    ? `<button data-action="consumeFood" data-actor-id="${actor.id}" data-item-id="${rations.id}">Use Rations</button>`
-    : `Find ${game.settings.get('fit', 'rationName')} soon!`;
-
-   const hunger = hungerLevel(actor);
-
-// Build the final chat card content
-  const chatContent = `
-    <div class='dnd5e chat-card'>
-      <div class='card-header flexrow'>
-        <img src="${hungerIcon(daysHungry)}" title="Rations" width="36" height="36">
-        <h3> ${localize('chat.you_are')} ${hunger}</h3>
-      </div>
-      <div class='card-content'>
-        <p>
-          ${localize('chat.eaten_since')} <strong>${display.date}</strong> ${localize('at')} <strong>${display.time}</strong>.
-        </p>
-        <p>
-          Use Rations to satisfy your hunger.
-        </p>
-        <p>
-           ${actionHtml}
-        </p>
-      </div>
-      <div class='card-footer'>
-        <span>${hunger}</span>
-        <span>Last Meal: ${display.date} ${localize('on')} ${display.time}</span>
-        <span>Rations: ${rations && rations.system && rations.system.quantity !== undefined ? rations.system.quantity : localize('none').toUpperCase()}</span>
-      </div>
-    </div>
-  `;
-
-  return chatContent;
-}
+  });
 
 /* =========================
    Exhaustion Mechanics
    ========================= */
+  // Function to update exhaustion without modifying the UI
+  export const updateExhaustion = (actor) => {
+  exhaustionIndex(actor);
+};
 
+  // Function to integrate exhaustion tracking with dnd5e.js
+  export const integrateExhaustionWithDnd5e = (actor) => {
+  updateExhaustion(actor);
+};
   // Hook into Foundry's updateExhaustionEffect to update the character's exhaustion attribute
   Hooks.on('updateExhaustionEffect', async (actor, exhaustionLevel) => {
-  console.log(`🛠 Debug: Updating exhaustion effect in UI for ${actor.name}, Level: ${exhaustionLevel}`);
 
   // 🔄 Update the character's exhaustion attribute in Foundry
   await actor.update({ "system.attributes.exhaustion": exhaustionLevel });
@@ -174,16 +109,12 @@ Hooks.on('createChatMessage', async (message) => {
   if (content.includes("takes a long rest")) {
     const actor = game.actors.get(message.speaker.actor);
     if (actor) {
-      console.log(`🛠 Debug: Detected long rest message for ${actor.name}`);
 
       // ✅ Always use the pre-defined instance
       await resetExhaustionAfterRest(actor);
     }
   }
-});
-
-  
-  // ✅ FINAL Correct closing brace for the class
+});  // ✅ FINAL Correct closing brace for the class
 
 
 

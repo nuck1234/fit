@@ -1,3 +1,6 @@
+import { hungerIcon } from "./hunger.js"; // Import hungerIcon
+import { daysHungryForActor, hungerLevel } from "./hunger.js"; // Import daysHungryForActor and hungerLevel
+import { localize } from './utils.js'; // Import the localize function
 /**
  * Generates and sends a chat message to the GM(s) notifying them of hunger changes for an actor.
  *
@@ -44,3 +47,47 @@ export function hungerChatMessage(content, actor) {
     type: CONST.CHAT_MESSAGE_STYLES.OTHER // Define the message type as 'Other'. changed due to issue raised with TYPES
   });
 }
+export async function sendHungerNotification(actor) {
+  const daysHungry = daysHungryForActor(actor);
+  const rations = actor.items.find(i => i.name === game.settings.get('fit', 'rationName'));
+
+  const lastMealAt = actor.getFlag('fit', 'lastMealAt') || 0;
+  const lastMealDate = new Date(lastMealAt * 1000);
+  const display = {
+      date: lastMealDate.toLocaleDateString(),
+      time: lastMealDate.toLocaleTimeString(),
+  };
+
+  const actionHtml = rations && rations.system && rations.system.quantity > 0
+      ? `<button data-action="consumeFood" data-actor-id="${actor.id}" data-item-id="${rations.id}">Use Rations</button>`
+      : `Find ${game.settings.get('fit', 'rationName')} soon!`;
+
+  const hunger = hungerLevel(actor);
+
+  const chatContent = `
+      <div class='dnd5e chat-card'>
+          <div class='card-header flexrow'>
+              <img src="${hungerIcon(daysHungry)}" title="Rations" width="36" height="36">
+              <h3> ${localize('chat.you_are')} ${hunger}</h3>
+          </div>
+          <div class='card-content'>
+              <p>
+                  ${localize('chat.eaten_since')} <strong>${display.date}</strong> ${localize('at')} <strong>${display.time}</strong>.
+              </p>
+              <p>
+                  Use Rations to satisfy your hunger.
+              </p>
+              <p>
+                  ${actionHtml}
+              </p>
+          </div>
+          <div class='card-footer'>
+              <span>${hunger}</span>
+              <span>Last Meal: ${display.date} ${localize('on')} ${display.time}</span>
+              <span>Rations: ${rations && rations.system && rations.system.quantity !== undefined ? rations.system.quantity : localize('none').toUpperCase()}</span>
+          </div>
+      </div>
+  `;
+
+    return chatContent;
+  }

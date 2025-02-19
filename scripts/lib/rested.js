@@ -1,12 +1,7 @@
 // This script integrates exhaustion tracking into the D&D 5e system within the Time-2-Eat module.
 // It includes logic to track exhaustion, reset it after a long rest, and log relevant data.
 
-import {
-  DEFAULT_EXHAUSTION_LEVEL,
-  EXHAUSTION_LEVELS,
-  EXHAUSTION_ICONS // Ensure exhaustion icons are imported for consistency
-} from './constants.js';
-
+import { DEFAULT_EXHAUSTION_LEVEL, EXHAUSTION_LEVELS, EXHAUSTION_ICONS } from './constants.js';// Ensure exhaustion icons are imported for consistency
 import { secondsAgo, daysFromSeconds } from "./time.js"; // Utility functions to calculate time differences.
 
 export const daysSinceLastRestForActor = (actor) => {
@@ -15,14 +10,12 @@ export const daysSinceLastRestForActor = (actor) => {
   if (!lastRestAt) {
     lastRestAt = game.time.worldTime;
     actor.setFlag('fit', 'lastRestAt', lastRestAt);
-    console.log(`🛠 Debug: ${actor.name} - No previous rest found. Setting current time as last rest: ${lastRestAt}`);
+  //  console.log(`🛠 Debug: ${actor.name} - No previous rest found. Setting current time as last rest: ${lastRestAt}`);
   }
 
   const secondsSinceLastRest = game.time.worldTime - lastRestAt;
   const daysSinceLastRest = daysFromSeconds(secondsSinceLastRest);
 
-  console.log(`🛠 Debug: ${actor.name} - Last Rest Timestamp: ${lastRestAt}, Seconds Since Last Rest: ${secondsSinceLastRest}, Days Since Last Rest: ${daysSinceLastRest}`);
-  
   return Math.max(daysSinceLastRest, 0);
 };
 
@@ -42,21 +35,18 @@ export const exhaustionIndex = (actor) => {
 
 // Function to be used for exhaustion tracking
 export async function trackExhaustion(actor) {
-  console.log(`🛠 Debug: Richard Tracking exhaustion for ${actor.name}`);
   if (!actor) {
     console.error("❌ Error: Richard trackExhaustion called with an invalid actor!");
     return;
 }
   
   const daysWithoutRest = daysSinceLastRestForActor(actor);
-  console.log(`🛠 Debug: Richard Days without rest: ${daysWithoutRest}`);
+ // console.log(`🛠 Debug: Richard Days without rest: ${daysWithoutRest}`);
 
   let exhaustionLevel = Math.floor(daysWithoutRest / 1); // to be looked at in the future as an en
-  console.log(`🛠 Debug: Richard Calculated exhaustion level: ${exhaustionLevel}`);
  
    // 🔄 Update the actor’s exhaustion directly
    await actor.update({ "system.attributes.exhaustion": exhaustionLevel });
-   console.log(`🛠 Debug: Exhaustion level updated for ${actor.name}: ${exhaustionLevel}`);
 
    // 🔄 Trigger the Hook to update UI
    Hooks.call('updateExhaustionEffect', actor, exhaustionLevel);
@@ -69,7 +59,7 @@ export const setLastRestTime = async (actor) => {
     return;
   }
   const now = game.time.worldTime;
-  console.log(`🛠 Debug: ${actor.name} - Last rest time updating to: ${now}`);
+ // console.log(`🛠 Debug: ${actor.name} - Last rest time updating to: ${now}`);
   await actor.setFlag('fit', 'lastRestAt', now);
 };
 
@@ -81,13 +71,12 @@ Hooks.once("ready", () => {
     Object.assign(fitModule.api, {
       resetExhaustionAfterRest: resetExhaustionAfterRest // ✅ Calls function directly
     });
-    console.log("🛠 Debug: fit module API functions exposed for debugging");
+  //  console.log("🛠 Debug: fit module API functions exposed for debugging");
   }
 });
 export async function resetExhaustionAfterRest(actor) {
   if (!actor) return;
 
-  console.log(`🛠 Debug: Resetting exhaustion for ${actor.name}`);
 
   // ✅ Set the last rest time to now
   await setLastRestTime(actor);
