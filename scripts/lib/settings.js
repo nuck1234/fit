@@ -2,11 +2,12 @@ const registerSettings = async () => {
   // Register the main toggle to enable or disable the "fit" hunger system.
   await game.settings.register('fit', 'enabled', {
     name: "Enable fit",
-    hint: "All player-controlled actors will be subject to hunger rules",
+    hint: "All player-controlled actors will be subject to hunger and exhaustion  rules",
     scope: "world",
     config: true,
     type: Boolean,
     default: true,
+    requiresReload: true // ✅ Automatically prompts for a refresh
   })
 
   // Register the setting to skip hunger evaluation for players who are not logged in.
