@@ -124,9 +124,15 @@ class fit {
         let activeUser = activeUsers.find(user => actor.testUserPermission(user, "OWNER"));
         if (!activeUser && game.settings.get('fit', 'skipMissingPlayers')) return;
     
+        if (game.settings.get("fit", "hungerTracking")) { // ✅ Only updates hunger if enabled
         await updateHunger(actor, elapsed);
         await evaluateHunger(actor);
+
+        }
+        
+        if (game.settings.get("fit", "exhaustionTracking")) { // ✅ Only updates exhaustion if enabled
         trackExhaustion(actor); // ✅ Now only updates exhaustion if the PC is in the active scene
+        }
       });
     });
 

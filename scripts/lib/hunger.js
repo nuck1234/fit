@@ -35,6 +35,8 @@ export const unsetHunger = async (actor) => {
 Helper function to calculate daysHungryForActor.
 ----------------------------------------------------*/
 export const daysHungryForActor = (actor) => {
+  if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "hungerTracking")) return; // ✅ Stops hunger if disabled
+
   const baseTolerance = game.settings.get('fit', 'baseTolerance') || 0;
   const tokenInScene = game.scenes.active?.tokens.some(token => token.actorId === actor.id);
 

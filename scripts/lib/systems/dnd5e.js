@@ -13,6 +13,10 @@ import { localize } from '../utils.js'; // Utility for localization of text.
     ------------------------- */
 
     function updateCharacterSheet(app, html, sheet) {
+
+      // ✅ Check if the module is enabled and hunger tracking is enabled
+      if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "hungerTracking")) return; // ✅ Stops hunger if disabled
+
       const el = $(html).find('.counters');
       const actorId = sheet.actor?._id;
       if (!actorId) {
@@ -113,6 +117,9 @@ import { localize } from '../utils.js'; // Utility for localization of text.
    ========================= */
   // Function to update exhaustion without modifying the UI
   export const updateExhaustion = (actor) => {
+  
+    // ✅ Stops exhaustion if disabled
+  if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "exhaustionTracking")) return; // ✅ Stops exhaustion reset if disabled
   exhaustionIndex(actor);
 };
 
@@ -122,6 +129,9 @@ import { localize } from '../utils.js'; // Utility for localization of text.
 };
   // Hook into Foundry's updateExhaustionEffect to update the character's exhaustion attribute
   Hooks.on('updateExhaustionEffect', async (actor, exhaustionLevel) => {
+  
+  // ✅ Stops exhaustion if disabled
+  if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "exhaustionTracking")) return; // ✅ Stops exhaustion reset if disabled
 
   // 🔄 Update the character's exhaustion attribute in Foundry
   await actor.update({ "system.attributes.exhaustion": exhaustionLevel });
