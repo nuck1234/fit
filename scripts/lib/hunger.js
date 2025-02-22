@@ -3,59 +3,135 @@ import { DEFAULT_HUNGER_LEVEL, HUNGER_LEVELS, HUNGER_ICONS } from './constants.j
 import { daysFromSeconds } from './time.js';
 import { localize } from './utils.js';
 
- // Helper function to calculate days hungry for an actor.
- export const daysHungryForActor = (actor) => {
+
+/* =========================
+   Hunger Mechanics
+   ========================= */
+
+/*-------------------------------------------------
+Function to initialize the hunger state of an actor
+---------------------------------------------------*/
+export const initializeHunger = async (actor) => {
+  const now = game.time.worldTime
+  await Promise.all([
+    actor.setFlag('fit', 'secondsSinceLastMeal', 0),
+    actor.setFlag('fit', 'lastMealAt', now),
+    actor.setFlag('fit', 'lastMealNotificationAt', now),
+    actor.setFlag('fit', 'lastDrinkAt', now),
+  ])
+  Hooks.call('initializeHunger', actor)
+}
+/*-------------------------------------------------
+Function to unset all hunger-related flags for an actor
+---------------------------------------------------*/
+export const unsetHunger = async (actor) => {
+  for (const key in actor.flags['fit']) {
+    await actor.unsetFlag('fit', key)
+  }
+  Hooks.call('unsetHunger', actor)
+}
+
+/*-------------------------------------------------
+Helper function to calculate daysHungryForActor.
+----------------------------------------------------*/
+export const daysHungryForActor = (actor) => {
   const baseTolerance = game.settings.get('fit', 'baseTolerance') || 0;
-  const lastMealAt = actor.getFlag('fit', 'lastMealAt') || 0;
-  const secondsSinceLastMeal = game.time.worldTime - lastMealAt;
-  const daysSinceLastMeal = daysFromSeconds(secondsSinceLastMeal);
+  const tokenInScene = game.scenes.active?.tokens.some(token => token.actorId === actor.id);
 
+  let elapsedTime;
+  if (!tokenInScene) {
+    // ✅ If PC is off-canvas, use the frozen hunger time
+    elapsedTime = actor.getFlag('fit', 'hungerElapsedTime') || 0;
+    console.log(`🛑 Using frozen hunger time for ${actor.name}:`, elapsedTime);
+  } else {
+    // ✅ If PC is on-canvas, calculate hunger normally
+    const lastMealAt = actor.getFlag('fit', 'lastMealAt') || game.time.worldTime;
+    elapsedTime = game.time.worldTime - lastMealAt;
+  }
+
+  const daysSinceLastMeal = daysFromSeconds(elapsedTime);
   let conMod = actor.system?.abilities?.con?.mod ?? 0;
-
 
   return Math.max(daysSinceLastMeal - (baseTolerance + conMod), 0);
 };
 
-
-// Function to get the hunger level description based on the number of days hungry
-export const hungerLevel = (actor) => {
-  const level = HUNGER_LEVELS[hungerIndex(actor)] || "unknown";
-  return game.i18n.localize(`${level}`);
- // console.log(`🛠 Debug: Hunger Level for ${actor.name}: ${level} (Index: ${hungerIndex(actor)})`);// added for table and chat issue
-  
-  return game.i18n.localize(`${level}`);// added for table and chat issue
-
-}
-
-// Function to get the hunger icon based on the number of days hungry
-export const hungerIcon = (actor) => {
-  return HUNGER_ICONS[hungerIndex(actor)];
-}
-
-// Function to calculate the hunger index based on the number of days hungry
-//import { daysHungryForActor } from './systems/dnd5e.js';
-
-export const hungerIndex = (actor) => {
+/*--------------------------------------------------------------------
+ Function to calculate the hungerIndex based on daysHungryForActor.
+ -------------------------------------------------------------------*/
+  export const hungerIndex = (actor) => {
  
-  if (!actor || typeof actor !== "object") {
+    if (!actor || typeof actor !== "object") {
       return 0;
+   }
+    const daysHungry = daysHungryForActor(actor);
+    const index = Math.min(DEFAULT_HUNGER_LEVEL + daysHungry, HUNGER_LEVELS.length - 1);
+
+    return index;
+}
+
+/*--------------------------------------------------------------------
+ Function to calculate the hungerLevel (in words) based on hungerIndex.
+ ---------------------------------------------------------------------*/
+  export const hungerLevel = (actor) => {
+    const level = HUNGER_LEVELS[hungerIndex(actor)] || "unknown";
+    return game.i18n.localize(`${level}`);// added for table and chat issue
+}
+
+/*--------------------------------------------------------------------
+ Function to calculate the hungerIcon based on hungerIndex.
+ ---------------------------------------------------------------------*/
+  export const hungerIcon = (actor) => {
+    return HUNGER_ICONS[hungerIndex(actor)];
+}
+
+/*--------------------------------------------------------------------
+ Function to calculate updateHunger based on elapsed time
+ ---------------------------------------------------------------------*/
+export const updateHunger = async (actor, elapsed) => {
+  const tokenInScene = game.scenes.active?.tokens.some(token => token.actorId === actor.id);
+
+  // ✅ Step 1: Check if the token is in the scene
+  console.log(`🔍 Checking token presence for ${actor.name}:`, { tokenInScene });
+
+  if (!tokenInScene) {
+    // ✅ Step 2: Check if hunger is already frozen
+    if (actor.getFlag('fit', 'hungerElapsedTime')) {
+      console.log(`🛑 Hunger already frozen for ${actor.name}, skipping update.`);
+      return;
+    }
+
+    // ✅ Step 3: Freeze hunger time for the first time
+    const lastMealAt = actor.getFlag('fit', 'lastMealAt') || game.time.worldTime;
+    const elapsedTime = game.time.worldTime - lastMealAt;
+
+    await actor.setFlag('fit', 'hungerElapsedTime', elapsedTime);
+    console.log(`❄ Freezing hunger for ${actor.name}:`, { lastMealAt, elapsedTime });
+
+    return; // ✅ Completely stop hunger updates off-canvas
   }
 
-  const daysHungry = daysHungryForActor(actor);
-  const index = Math.min(DEFAULT_HUNGER_LEVEL + daysHungry, HUNGER_LEVELS.length - 1);
+  // ✅ If the PC is back on canvas, restore hunger tracking
+  if (actor.getFlag('fit', 'hungerElapsedTime')) {
+    const currentTime = game.time.worldTime;
+    const frozenElapsed = actor.getFlag('fit', 'hungerElapsedTime');
 
-   return index;
-}
+    // ✅ Restore hunger to where it left off
+    await actor.setFlag('fit', 'lastMealAt', currentTime - frozenElapsed);
+    await actor.setFlag('fit', 'secondsSinceLastMeal', frozenElapsed);
+    await actor.unsetFlag('fit', 'hungerElapsedTime');
 
-// Function to update the hunger state of an actor based on elapsed time
-export const updateHunger = async (actor, elapsed) => {
-  const seconds = actor.getFlag('fit', 'secondsSinceLastMeal')
-  if (typeof seconds === 'undefined') return
+    console.log(`▶ Hunger resumed for ${actor.name}:`, { currentTime, frozenElapsed });
+  }
 
-  await actor.setFlag('fit', 'secondsSinceLastMeal', seconds + elapsed)
+  // ✅ Only update hunger when the PC is on canvas
+  const seconds = actor.getFlag('fit', 'secondsSinceLastMeal') || 0;
+  await actor.setFlag('fit', 'secondsSinceLastMeal', seconds + elapsed);
+  Hooks.call('updateHunger', actor);
+};
 
-  Hooks.call('updateHunger', actor)
-}
+/*--------------------------------------------------------------------
+ Hunger Effects
+ ---------------------------------------------------------------------*/
 
 // Function to get active hunger effects for an actor
 export const activeHungerEffectsFor = (actor) => {
@@ -69,8 +145,6 @@ export const addOrUpdateHungerEffect = async (actor, activeEffectConfig) => {
   await actor.setFlag('fit', 'hungerActiveEffect', effect.id);
   Hooks.call('addOrUpdateHungerEffect', actor, effect);
   }
-
-  
 
 // Function to consume food and reset the hunger state of an actor
 export const consumeFood = async (actor) => {
@@ -92,8 +166,7 @@ export const removeHungerEffects = async (actor) => {
       console.warn(`⚠️ Warning: Hunger Effect ID ${effect.id} does not exist for ${actor.name}. Skipping deletion.`);
       continue;
     }
-  //  console.log(`🛠 Debug: Removing Hunger Effect from ${actor.name}: ${effect.name}`);
-    await effect.delete();
+      await effect.delete();
   }
 
   // Clear the hungerActiveEffect flag if effects were found
@@ -104,22 +177,4 @@ export const removeHungerEffects = async (actor) => {
   Hooks.call('removeHungerEffects', actor);
 }
 
-// Function to initialize the hunger state of an actor
-export const initializeHunger = async (actor) => {
-  const now = game.time.worldTime
-  await Promise.all([
-    actor.setFlag('fit', 'secondsSinceLastMeal', 0),
-    actor.setFlag('fit', 'lastMealAt', now),
-    actor.setFlag('fit', 'lastMealNotificationAt', now),
-    actor.setFlag('fit', 'lastDrinkAt', now),
-  ])
-  Hooks.call('initializeHunger', actor)
-}
 
-// Function to unset all hunger-related flags for an actor
-export const unsetHunger = async (actor) => {
-  for (const key in actor.flags['fit']) {
-    await actor.unsetFlag('fit', key)
-  }
-  Hooks.call('unsetHunger', actor)
-}

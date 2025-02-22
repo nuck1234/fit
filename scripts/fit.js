@@ -1,6 +1,6 @@
 // Import necessary modules and constants
 import registerSettings from "./lib/settings.js";
-import { consumeFood, initializeHunger, updateHunger, unsetHunger, hungerLevel, hungerIcon, hungerIndex } from "./lib/hunger.js";
+import { initializeHunger, updateHunger, unsetHunger } from "./lib/hunger.js";
 import { preloadTemplates } from './lib/preloadTemplates.js';
 import HungerTable from './lib/hunger-table.js';
 import { evaluateHunger } from './lib/systems/dnd5e.js';
@@ -12,36 +12,6 @@ class NoOpSystem {
     return;
   }
 }
-
-Hooks.once('init', async () => {
-  console.log("fit module initializing...");
-
-  // ✅ Initialize the module without system
-  game.fit = new fit();
-  game.fit.init();
-});
-
-Hooks.once('ready', async () => {
-  console.log("fit module ready!");
-
-  // Ensure hunger utilities are exposed via the module's API
- game.modules.get('fit').api = {
-    hungerLevel: (actor) => {
-        console.log("🛠 API Call: hungerLevel received", actor);
-        return hungerLevel(actor);
-    },
-    hungerIcon: (actor) => {
-        console.log("🛠 API Call: hungerIcon received", actor);
-        return hungerIcon(actor);
-    },
-    hungerIndex: (actor) => {
-        console.log("🛠 API Call: hungerIndex received", actor);
-        return hungerIndex(actor);
-    }
-  };
-
-  console.log("fit API initialized:", game.modules.get('fit').api);
-});
 
 class fit {
   constructor() {
@@ -72,18 +42,45 @@ class fit {
     // Hook to handle token creation events
     Hooks.on('preCreateToken', async (document, data, options) => {
       const actor = game.actors.get(document.actorId);
-      if (typeof actor === "undefined") return;
-      if (!game.user.isGM) return;
-      if (!actor.getFlag('fit', 'lastMealAt')) {
-        await initializeHunger(actor);
-      }
+      if (!actor || !actor.hasPlayerOwner) return;
+    
+      // ✅ Retrieve stored hunger state
+      const elapsedHungerTime = actor.getFlag('fit', 'hungerElapsedTime') || 0;
+      const currentTime = game.time.worldTime;
+      await actor.setFlag('fit', 'lastMealAt', currentTime - elapsedHungerTime);
+      await actor.setFlag('fit', 'secondsSinceLastMeal', elapsedHungerTime);
+      await actor.unsetFlag('fit', 'hungerElapsedTime');
+    
+      // ✅ Retrieve stored rest state
+      const elapsedRestTime = actor.getFlag('fit', 'restElapsedTime') || 0;
+      await actor.setFlag('fit', 'lastRestAt', currentTime - elapsedRestTime);
+      await actor.unsetFlag('fit', 'restElapsedTime');
+    
     });
+    
 
-    // Hook to handle token deletion events
     Hooks.on('preDeleteToken', async (document, data) => {
       const actor = game.actors.get(document.actorId);
-      // Placeholder for clearing hunger timer logic - this.clearHungerTimer(actor)
+      if (!actor || !actor.hasPlayerOwner) return;
+    
+      // ✅ Capture elapsed hunger time
+      const lastMealAt = actor.getFlag('fit', 'lastMealAt') || game.time.worldTime;
+      const elapsedHungerTime = game.time.worldTime - lastMealAt;
+      await actor.setFlag('fit', 'hungerElapsedTime', elapsedHungerTime);
+    
+      // ✅ Capture elapsed rest time
+      const lastRestAt = actor.getFlag('fit', 'lastRestAt') || game.time.worldTime;
+      const elapsedRestTime = game.time.worldTime - lastRestAt;
+      await actor.setFlag('fit', 'restElapsedTime', elapsedRestTime);
+    
+      // ✅ Store exhaustion level
+      const exhaustionLevel = actor.getFlag('fit', 'exhaustionLevel') || 0;
+      await actor.setFlag('fit', 'storedExhaustionLevel', exhaustionLevel);
+    
+      // ✅ Output stored values to console for debugging
+      console.log(`🔍 Frozen for ${actor.name}:`, { lastMealAt, elapsedHungerTime, lastRestAt, elapsedRestTime, exhaustionLevel });
     });
+    
 
     let _sessionTime = 0;
     const EVAL_FREQUENCY = 30;
@@ -94,69 +91,34 @@ class fit {
       _sessionTime += elapsed;
       if (_sessionTime < EVAL_FREQUENCY) return;
       _sessionTime = 0;
-
+    
       if (!game.scenes.active) return;
       if (!game.user.isGM) return;
-
+    
       const activeUsers = game.users.filter(user => user.active && !user.isGM);
-
-      game.scenes.active.tokens.forEach(async token => {
-        const actor = game.actors.get(token.actorId);
-        // We want to skip non-actors and non-player controlled characters
-        if (typeof actor === 'undefined') return;
+      const activeTokens = game.scenes.active.tokens.map(token => token.actorId);
+    
+      game.actors.forEach(async actor => {
         if (!actor.hasPlayerOwner) return;
-
-        // We want to reset hunger in these two circumstances
-        // We skipped backwards by more than 5m
+        if (!activeTokens.includes(actor.id)) return; // ✅ Skip actors NOT in the active scene
+    
         if (elapsed < -300) {
           await initializeHunger(actor);
           return;
         }
-
-        // We also want to skip any player who is not logged in if skipMissingPlayers is on
-        let activeUser;
-        activeUser = activeUsers.find(user => actor.testUserPermission(user, "OWNER"));
+    
+        let activeUser = activeUsers.find(user => actor.testUserPermission(user, "OWNER"));
         if (!activeUser && game.settings.get('fit', 'skipMissingPlayers')) return;
-
+    
         await updateHunger(actor, elapsed);
-
-        await evaluateHunger(actor); // ✅ Now calls the standalone function
-        trackExhaustion(actor);
+        await evaluateHunger(actor);
+        trackExhaustion(actor); // ✅ Now only updates exhaustion if the PC is in the active scene
       });
     });
 
-    // Hook to handle item updates related to rations
-    Hooks.on('preUpdateItem', async (item, change) => {
-  
-      if (change.hasOwnProperty('sort')) return; // Ignore reordering
-
-      // Check if the item's name matches the configured ration name
-      if (game.settings.get('fit', 'rationName') === item.name) {
-        
-      // Retrieve the actor associated with the item
-        const actor = game.actors.get(item.actor.id);
-
-       // If the actor is not found, log an error and stop further processing
-      if (!actor) {
-          console.error("Actor not found for item:", item);
-          return;
-        }
-          // Determine if the item was consumed based on its uses or quantity
-        const consumedUses = item.system.uses?.value !== undefined && change.system.uses?.value === item.system.uses.value - 1;
-        const consumedQuantity = item.system.quantity !== undefined && change.system.quantity === item.system.quantity - 1;
-      
-         // If the item was consumed (uses or quantity decreased), handle food consumption
-        if (consumedUses || consumedQuantity) {
-          console.log(`${actor.name} consumed a ration directly from inventory.`);
-
-         // Centralized logic: Call the consumeFood function to handle hunger updates
-          await consumeFood(actor); // Centralizes hunger effect removal and flag resets
-        }
-      }
-      
-    });
+    
   }
-
+// Initialize hunger for all actors in the active scene
   initializeScene() {
     console.log("fit | Initializing Scene");
     if (!game.scenes.active) return;
@@ -184,6 +146,18 @@ class fit {
     Hooks.call("resetHunger", actor);
   }
 }
+
+Hooks.once('init', async () => {
+  console.log("fit module initializing...");
+
+  // ✅ Initialize the module without system
+  game.fit = new fit();
+  game.fit.init();
+});
+
+Hooks.once('ready', async () => {
+  console.log("fit module ready!");
+});
 
 // Add a button to the Scene Controls for toggling the Hunger Table
 Hooks.on("getSceneControlButtons", (controls) => {

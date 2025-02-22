@@ -4,27 +4,38 @@
 import { DEFAULT_EXHAUSTION_LEVEL, EXHAUSTION_LEVELS, } from './constants.js';// Ensure exhaustion icons are imported for consistency
 import { daysFromSeconds } from "./time.js"; // Utility functions to calculate time differences.
 
-export const daysSinceLastRestForActor = (actor) => {
-  let lastRestAt = actor.getFlag('fit', 'lastRestAt') || 0;
 
-  if (!lastRestAt) {
-    lastRestAt = game.time.worldTime;
-    actor.setFlag('fit', 'lastRestAt', lastRestAt);
-  //  console.log(`🛠 Debug: ${actor.name} - No previous rest found. Setting current time as last rest: ${lastRestAt}`);
+
+/*-------------------------------------------------
+Helper function to calculate daysSinceLastRestForActor
+----------------------------------------------------*/
+export const daysSinceLastRestForActor = (actor) => {
+  const baseTolerance = game.settings.get('fit', 'baseTolerance') || 0;
+  const tokenInScene = game.scenes.active?.tokens.some(token => token.actorId === actor.id);
+
+  let elapsedTime;
+  if (!tokenInScene) {
+    // ✅ Use frozen rest time instead of live calculation
+    elapsedTime = actor.getFlag('fit', 'restElapsedTime') || 0;
+    console.log(`🛑 Using frozen rest time for ${actor.name}:`, elapsedTime);
+  } else {
+    // ✅ Normal calculation for on-scene PCs
+    const lastRestAt = actor.getFlag('fit', 'lastRestAt') || game.time.worldTime;
+    elapsedTime = game.time.worldTime - lastRestAt;
   }
 
-  const secondsSinceLastRest = game.time.worldTime - lastRestAt;
-  const daysSinceLastRest = daysFromSeconds(secondsSinceLastRest);
+  let daysSinceLastRest = daysFromSeconds(elapsedTime);
+  
+  // ✅ Cap the max days without rest at 6 (to align with exhaustion limit)
+  daysSinceLastRest = Math.min(6, daysSinceLastRest);
 
+  console.log(`🛑 Days Without Rest for ${actor.name}:`, daysSinceLastRest);
+  
   return Math.max(daysSinceLastRest, 0);
 };
-
-// Function to get the exhaustion level description based on the number of days without rest
-export const exhaustionLevel = (actor) => {
-  return EXHAUSTION_LEVELS[exhaustionIndex(actor)] || "unknown";
-};
-
-// Function to calculate the exhaustion index based on the number of days without rest
+/*--------------------------------------------------------------------
+ Function to calculate the exhaustionIndex based on daysSinceLastRestForActor.
+ -------------------------------------------------------------------*/
 export const exhaustionIndex = (actor) => {
   if (!actor || typeof actor !== "object") {
     return 0;
@@ -33,12 +44,36 @@ export const exhaustionIndex = (actor) => {
   return Math.min(DEFAULT_EXHAUSTION_LEVEL + daysWithoutRest, EXHAUSTION_LEVELS.length - 1);
 };
 
+/*--------------------------------------------------------------------
+ Function to calculate the exhaustionLevel (in words) based on exhaustionIndex.
+ ---------------------------------------------------------------------*/
+export const exhaustionLevel = (actor) => {
+  return EXHAUSTION_LEVELS[exhaustionIndex(actor)] || "unknown";
+};
+
+
+
 // Function to be used for exhaustion tracking
-export async function trackExhaustion(actor) {
-  if (!actor) {
-    console.error("❌ Error: Richard trackExhaustion called with an invalid actor!");
-    return;
-}
+export const trackExhaustion = async (actor) => {
+  const tokenInScene = game.scenes.active?.tokens.some(token => token.actorId === actor.id);
+  
+  if (!tokenInScene) {
+    if (actor.getFlag('fit', 'exhaustionElapsedTime')) return; // ✅ Prevent multiple saves
+
+    // ✅ Capture the frozen exhaustion state
+    const exhaustionLevel = actor.getFlag('fit', 'exhaustionLevel') || 0;
+    await actor.setFlag('fit', 'exhaustionElapsedTime', exhaustionLevel);
+
+    return; // ✅ Stop exhaustion updates off-canvas
+  }
+
+  // ✅ If the PC is back on canvas, restore exhaustion
+  if (actor.getFlag('fit', 'exhaustionElapsedTime')) {
+    const storedExhaustion = actor.getFlag('fit', 'exhaustionElapsedTime');
+    await actor.setFlag('fit', 'exhaustionLevel', storedExhaustion);
+    await actor.unsetFlag('fit', 'exhaustionElapsedTime');
+  }
+
   
   const daysWithoutRest = daysSinceLastRestForActor(actor);
  // console.log(`🛠 Debug: Richard Days without rest: ${daysWithoutRest}`);
