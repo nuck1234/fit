@@ -10,6 +10,27 @@ const registerSettings = async () => {
     requiresReload: true // ✅ Automatically prompts for a refresh
   })
 
+  await game.settings.register("fit", "hungerTracking", {
+    name: "Enable Hunger Tracking",
+    hint: "If enabled, hunger tracking will be active. Uncheck to disable hunger tracking.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true, // Default: Hunger tracking ON when checked
+    requiresReload: true
+})
+
+await game.settings.register("fit", "exhaustionTracking", {
+  name: "Enable Exhaustion Tracking",
+  hint: "If enabled, exhaustion tracking will be active. Uncheck to disable exhaustion tracking.",
+  scope: "world",
+  config: true,
+  type: Boolean,
+  default: true, // ✅ Default: Exhaustion tracking is ON
+  requiresReload: true
+});
+
+
   // Register the setting to skip hunger evaluation for players who are not logged in.
   await game.settings.register('fit', 'skipMissingPlayers', {
     name: "Don't make missing players hungry",
