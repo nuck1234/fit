@@ -21,22 +21,33 @@ class fit {
   async init() {
     console.log("fit | Initialized");
 
-    // Register module settings and preload templates
-    await registerSettings();
-    await preloadTemplates();
-
-    // Setup hooks if the module is enabled in the settings
-    if (game.settings.get('fit', 'enabled')) {
-      this.setupHooks();
-    }
+     // ✅ Ensure settings are registered before using them
+     await registerSettings();
+    
+    // Check if fit is enabled and if so register module settings
+    if (!game.settings.get("fit", "enabled")) {
+      console.log("fit | FIT system is disabled. Skipping initialization.");
+      return;
   }
+    // Register module settings and preload templates
+    await preloadTemplates();
+    // Setup hooks if the module is enabled in the settings
+    this.setupHooks();
+    }
+  
 
   setupHooks() {
     console.log("fit | Setup");
 
-    // Hook to initialize hunger for actors in the active scene
+    // Check if fit is enabled and if so Hook to initialize hunger for actors in the active scene
+    if (!game.settings.get("fit", "enabled")) {
+      console.log("fit | Hooks disabled.");
+      return;
+  }
+    console.log("fit | Setup"); 
+    
     Hooks.on('ready', () => {
-      this.initializeScene();
+    this.initializeScene();
     });
 
     // Hook to handle token creation events
@@ -87,6 +98,9 @@ class fit {
 
     // Hook to evaluate hunger periodically based on elapsed world time
     Hooks.on('updateWorldTime', async (seconds, elapsed) => {
+      // Check if fit is enabled and if so carry on 
+      if (!game.settings.get("fit", "enabled")) return;
+
       console.log('updateWorldTime triggered:', { seconds, elapsed });
       _sessionTime += elapsed;
       if (_sessionTime < EVAL_FREQUENCY) return;
