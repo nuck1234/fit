@@ -4,7 +4,7 @@
 
 import { daysFromSeconds } from "../time.js"; // Utility functions to calculate time differences.
 import { hungerChatMessage, sendHungerNotification } from "../chat.js"; // Function to send hunger notifications to the chat.
-import { hungerLevel, hungerIcon, addOrUpdateHungerEffect, removeHungerEffects, daysHungryForActor } from "../hunger.js"; // Functions and utilities for managing hunger levels and effects.
+import { hungerLevel, hungerIcon, addOrUpdateHungerEffect, removeHungerEffects, daysHungryForActor, consumeFood } from "../hunger.js"; // Functions and utilities for managing hunger levels and effects.
 import { resetExhaustionAfterRest, exhaustionIndex } from "../rested.js"; // Function to set the last rest timestamp for an actor.
 import { localize } from '../utils.js'; // Utility for localization of text.
   
@@ -33,7 +33,32 @@ import { localize } from '../utils.js'; // Utility for localization of text.
       // ✅ Add the Hunger UI element only once
       el.append(`<div class='counter flexrow hunger'><h4>Hunger</h4><div class='counter-value'>${hungerLevel(actor)}</div></div>`);
     }
-  
+
+      //Consume food from inventory
+      Hooks.on('preUpdateItem', async (item, change) => {
+      if (change.hasOwnProperty('sort')) return; // Ignore reordering
+   
+      // Check if the item's name matches the configured ration name
+      if (game.settings.get('fit', 'rationName') === item.name) {
+        const actor = game.actors.get(item.actor.id);
+        if (!actor) {
+          console.error("Actor not found for item:", item);
+          return;
+        }
+    
+        // Determine if the item was consumed based on its uses or quantity
+        const consumedUses = item.system.uses?.value !== undefined && change.system.uses?.value === item.system.uses.value - 1;
+        const consumedQuantity = item.system.quantity !== undefined && change.system.quantity === item.system.quantity - 1;
+    
+        if (consumedUses || consumedQuantity) {
+          console.log(`${actor.name} consumed a ration directly from inventory.`);
+    
+          // ✅ Now calls `consumeFood()` from hunger.js inside dnd5e.js
+          await consumeFood(actor);
+        }
+      }
+    });
+    
 
     // Main function to evaluate and update an actor's hunger status.
     export async function evaluateHunger(actor) {
@@ -45,12 +70,15 @@ import { localize } from '../utils.js'; // Utility for localization of text.
       const daysHungry = daysHungryForActor(actor);
 
       // Apply or update hunger effects if the actor is hungry.
-      if (daysHungry >= 1 && daysHungry <= 5) {
-        await removeHungerEffects(actor); // ✅ Ensure old effect is removed before applying new one
+      if (daysHungry >= 1) { // ✅ Apply effects for ANY hunger, not just <= 5
+        await removeHungerEffects(actor); // ✅ Ensure old effect is removed before applying a new one
         const config = activeEffectConfig(actor, daysHungry);
         await addOrUpdateHungerEffect(actor, config);
-    } else {
-        await removeHungerEffects(actor); // ✅ Remove effect when hunger is out of range
+      } 
+      
+      // ✅ Ensure effects do NOT get removed at daysHungry > 5
+      if (daysHungry > 5) {
+        console.log(`⚠ ${actor.name} is starving (Hunger: ${daysHungry} days). Effects remain active.`);
       }
 
       // Notify the players via chat about the actor's hunger status.
