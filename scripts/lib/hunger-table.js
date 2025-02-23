@@ -1,4 +1,4 @@
-import { hungerLevel } from "./hunger.js";
+import { hungerLevel, daysHungryForActor, lastMealAt, secondsSinceLastMeal } from "./hunger.js";
 
 let hungerTable;
 
@@ -35,41 +35,20 @@ export default class HungerTable extends Application {
   }
 
   /**
-   * Retrieves the data necessary to render the hunger table.
-   * Processes actors, calculating relevant hunger-related metrics for each.
+   * Retrieves the hunger data from `hunger.js` instead of performing calculations here.
    * @returns {Object} - Data object containing processed actor information for the template.
    */
   getData() {
     const data = game.actors.filter(actor => actor.hasPlayerOwner).map(actor => {
-      const lastMealAt = actor.getFlag('fit', 'lastMealAt') || 0;
-      const secondsSinceLastMeal = game.time.worldTime - lastMealAt;
-      
-  // Calculate days hungry dynamically
-  const baseTolerance = game.settings.get('fit', 'baseTolerance'); // Dynamically fetch from settings
-  const daysSinceLastMeal = Math.floor(secondsSinceLastMeal / 86400);
-  const conMod = actor.system.abilities.con.mod || 0; // Constitution modifier
-  const hungerTolerance = Math.max(baseTolerance + conMod, 0); // Constitution-based tolerance
-  const daysHungry = Math.max(daysSinceLastMeal - hungerTolerance, 0);
-  const hunger = hungerLevel(actor); // Dynamically calculate hunger description
-
-  
-     /* console.log("Actor Debug:", {
-        name: actor.name,
-        lastMealAtRaw: lastMealAt,
-        formattedLastMeal: this.formatDate(lastMealAt),
-        secondsSinceLastMeal,
-        hoursSinceLastMeal: this.formatHours(secondsSinceLastMeal),
-        hunger, // Log fetched hunger
-      });*/
-  
       return {
         name: actor.name,
-        lastMealAt: this.formatDate(lastMealAt),
-        hoursSinceLastMeal: this.formatHours(secondsSinceLastMeal),
-        hunger, // Include hunger in the returned data
+        lastMealAt: this.formatDate(lastMealAt(actor)), // ✅ Fetches last meal time from `hunger.js`
+        hoursSinceLastMeal: this.formatHours(secondsSinceLastMeal(actor)), // ✅ Fetches elapsed time
+        daysHungry: daysHungryForActor(actor), // ✅ Fetches hunger duration
+        hunger: hungerLevel(actor) // ✅ Fetches hunger level description
       };
     });
-  
+
     console.log("Hunger Table Data Sent to Template:", data);
     return { actors: data };
   }
@@ -122,4 +101,3 @@ export default class HungerTable extends Application {
     return options;
   }
 }
-
