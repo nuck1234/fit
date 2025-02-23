@@ -132,6 +132,31 @@ export const updateHunger = async (actor, elapsed) => {
 };
 
 /*--------------------------------------------------------------------
+ Export lastMealAt and secondsSinceLastMeal functions for the hunger table
+ ---------------------------------------------------------------------*/
+ export const lastMealAt = (actor) => {
+  if (!actor) return 0;
+  const tokenInScene = game.scenes.active?.tokens.some(token => token.actorId === actor.id);
+  
+  if (!tokenInScene) {
+      // ✅ If off-canvas, simulate last meal using stored hungerElapsedTime
+      const elapsedHungerTime = actor.getFlag('fit', 'hungerElapsedTime') || 0;
+      return game.time.worldTime - elapsedHungerTime;
+  } else {
+      // ✅ If on-canvas, use lastMealAt directly
+      return actor.getFlag('fit', 'lastMealAt') || game.time.worldTime;
+  }
+};
+
+export const secondsSinceLastMeal = (actor) => {
+  if (!actor) return 0;
+  return game.time.worldTime - lastMealAt(actor); // ✅ Uses the new lastMealAt function
+};
+
+
+
+
+/*--------------------------------------------------------------------
  Hunger Effects
  ---------------------------------------------------------------------*/
 

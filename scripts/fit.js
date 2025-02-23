@@ -181,6 +181,7 @@ Hooks.once('ready', async () => {
 
 // Add a button to the Scene Controls for toggling the Hunger Table
 Hooks.on("getSceneControlButtons", (controls) => {
+  if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "hungerTracking")) return; // ✅ Stops hunger if disabled
  // console.log("Scene Controls BEFORE addition:", controls);
 
   // Find the Token Controls group
