@@ -8,61 +8,79 @@ import { hungerLevel, hungerIcon, addOrUpdateHungerEffect, removeHungerEffects, 
 import { resetExhaustionAfterRest, exhaustionIndex } from "../rested.js"; // Function to set the last rest timestamp for an actor.
 import { localize } from '../utils.js'; // Utility for localization of text.
   
-    /* -------------------------
-    Hunger Mechanics
-    ------------------------- */
+/* =======================
+ Hunger Mechanics
+========================= */
 
-    function updateCharacterSheet(app, html, sheet) {
+/*-------------------------------------------------
+Function updateCharacterSheet
+---------------------------------------------------*/
+function updateCharacterSheet(app, html, sheet) {
 
-      // ✅ Check if the module is enabled and hunger tracking is enabled
-      if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "hungerTracking")) return; // ✅ Stops hunger if disabled
+  // ✅ Check if the module is enabled and hunger tracking is enabled
+  if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "hungerTracking")) return; // ✅ Stops hunger if disabled
 
-      const el = $(html).find('.counters');
-      const actorId = sheet.actor?._id;
-      if (!actorId) {
-        console.error('Actor ID not found');
-        return;
+  const el = $(html).find('.counters');
+  const actorId = sheet.actor?._id;
+  if (!actorId) {
+  console.error('Actor ID not found');
+    return;
       }
-      const actor = game.actors.get(actorId);
-      if (!actor) {
-        console.error(`Actor not found for ID: ${actorId}`);
-        return;
+  const actor = game.actors.get(actorId);
+  if (!actor) {
+  console.error(`Actor not found for ID: ${actorId}`);
+     return;
       }
-      const daysHungry = daysHungryForActor(actor);
-    
+  const daysHungry = daysHungryForActor(actor);
+
+
     
       // ✅ FIX: Remove existing "Hunger" counter before adding a new one
       $(html).find('.counter.hunger').remove();
-    
-      // ✅ Add the Hunger UI element only once
-      el.append(`<div class='counter flexrow hunger'><h4>Hunger</h4><div class='counter-value'>${hungerLevel(actor)}</div></div>`);
-    }
-
-      //Consume food from inventory
-      Hooks.on('preUpdateItem', async (item, change) => {
-      if (change.hasOwnProperty('sort')) return; // Ignore reordering
-   
-      // Check if the item's name matches the configured ration name
-      if (game.settings.get('fit', 'rationName') === item.name) {
-        const actor = game.actors.get(item.actor.id);
-        if (!actor) {
-          console.error("Actor not found for item:", item);
-          return;
+      
+          // ✅ Add the Hunger UI element only once
+          el.append(`<div class='counter flexrow hunger'><h4>Hunger</h4><div class='counter-value'>${hungerLevel(actor)}</div></div>`);
         }
+  
+  // Renders the hunger UI element on the character sheet.
+   Hooks.once('ready', () => {
+    console.log("🛠 Debug: DND5e UI Hooks Initialized");
+    Hooks.on('renderActorSheet5eCharacter', (app, html, sheet) => updateCharacterSheet(app, html, sheet));
+    });
+  
     
-        // Determine if the item was consumed based on its uses or quantity
-        const consumedUses = item.system.uses?.value !== undefined && change.system.uses?.value === item.system.uses.value - 1;
-        const consumedQuantity = item.system.quantity !== undefined && change.system.quantity === item.system.quantity - 1;
+/*-------------------------------------------------
+CONSUME FOOD
+---------------------------------------------------*/  
+  //Consume food from inventory
+  Hooks.on('preUpdateItem', async (item, change) => {
+  if (change.hasOwnProperty('sort')) return; // Ignore reordering
+   
+  // Check if the item's name matches the configured ration name
+  if (game.settings.get('fit', 'rationName') === item.name) {
+    const actor = game.actors.get(item.actor.id);
+ 
+    if (!actor) {
+    console.error("Actor not found for item:", item);
+  return;
+    }
+ 
+  // Determine if the item was consumed based on its uses or quantity
+     const consumedUses = item.system.uses?.value !== undefined && change.system.uses?.value === item.system.uses.value - 1;
+     const consumedQuantity = item.system.quantity !== undefined && change.system.quantity === item.system.quantity - 1;
     
-        if (consumedUses || consumedQuantity) {
-          console.log(`${actor.name} consumed a ration directly from inventory.`);
-    
-          // ✅ Now calls `consumeFood()` from hunger.js inside dnd5e.js
-          await consumeFood(actor);
+     if (consumedUses || consumedQuantity) {
+        console.log(`${actor.name} consumed a ration directly from inventory.`);
+   
+  // ✅ Now calls `consumeFood()` from hunger.js inside dnd5e.js
+     await consumeFood(actor);
         }
       }
     });
     
+    /*-------------------------------------------------
+    HUNGER EFFECTS
+    ---------------------------------------------------*/
 
     // Main function to evaluate and update an actor's hunger status.
     export async function evaluateHunger(actor) {
@@ -97,20 +115,19 @@ import { localize } from '../utils.js'; // Utility for localization of text.
   
     // Helper function to configure active effects based on hunger.
     export function activeEffectConfig(actor, daysHungry) {
+      const currentHungerLevel = hungerLevel(actor); // Get the actual hunger level
+  
       return {
-        icon: hungerIcon(daysHungry),
-        label: localize('hungerEffect'),
-        changes: [
-          { key: 'system.attributes.hp.tempmax', mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE, value: -daysHungry }
-        ],
-        duration: { rounds: 10 }
+          icon: hungerIcon(currentHungerLevel), // ✅ Uses correct hunger icon
+          label: `Hunger Level (${currentHungerLevel})`, // ✅ Dynamic effect name for UI
+          flags: { fit: { hungerEffect: true } }, // ✅ Marks this as a hunger effect for easy removal
+          changes: [
+              { key: 'system.attributes.hp.tempmax', mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE, value: -daysHungry }
+          ],
+          duration: { rounds: 10 }
       };
-}
-  // Renders the hunger UI element on the character sheet.
-    Hooks.once('ready', () => {
-    console.log("🛠 Debug: DND5e UI Hooks Initialized");
-    Hooks.on('renderActorSheet5eCharacter', (app, html, sheet) => updateCharacterSheet(app, html, sheet));
-  });
+  }
+  
 
 /* =========================
    Exhaustion Mechanics
