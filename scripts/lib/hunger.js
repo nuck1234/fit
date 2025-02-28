@@ -82,10 +82,17 @@ export const daysHungryForActor = (actor) => {
 /*--------------------------------------------------------------------
  Function to calculate the hungerIcon based on hungerIndex.
  ---------------------------------------------------------------------*/
-  export const hungerIcon = (actor) => {
-    return HUNGER_ICONS[hungerIndex(actor)];
+  export function hungerIcon(level) {
+  switch (level) {
+    case "Satisfied": return 'modules/fit/templates/icons/level_0.png'; // satisfied
+    case "Peckish": return 'modules/fit/templates/icons/level_1.png'; // peckish
+    case "Hungry": return 'modules/fit/templates/icons/level_2.png'; // hungry
+    case "Ravenous": return 'modules/fit/templates/icons/level_3.png'; // ravenous
+    case "Famished": return 'modules/fit/templates/icons/level_4.png'; // famished
+    case "Starving": return 'modules/fit/templates/icons/level_5.png'; // starving
+    default: return 'modules/fit/templates/icons/level_0.png'; // Default icon (in case of error)
+  }
 }
-
 /*--------------------------------------------------------------------
  Function to calculate updateHunger based on elapsed time
  ---------------------------------------------------------------------*/
@@ -167,11 +174,17 @@ export const activeHungerEffectsFor = (actor) => {
 
 // Function to add or update hunger effects for an actor
 export const addOrUpdateHungerEffect = async (actor, activeEffectConfig) => {
-  await removeHungerEffects(actor); // ✅ Ensure previous hunger effects are removed
-  let effect = await ActiveEffect.create(activeEffectConfig, { parent: actor });
-  await actor.setFlag('fit', 'hungerActiveEffect', effect.id);
+  // ✅ Ensure any existing hunger effects are removed before applying a new one
+  await removeHungerEffects(actor);
+
+  // ✅ Apply the new hunger effect
+  let effect = await actor.createEmbeddedDocuments("ActiveEffect", [activeEffectConfig]);
+  await actor.setFlag('fit', 'hungerActiveEffect', effect[0].id);
+  console.log(`🆕 Applied Hunger Effect: ${activeEffectConfig.label} to ${actor.name}`);
+
   Hooks.call('addOrUpdateHungerEffect', actor, effect);
-  }
+};
+
 
 // Function to consume food and reset the hunger state of an actor
 export const consumeFood = async (actor) => {
@@ -183,25 +196,20 @@ export const consumeFood = async (actor) => {
   
 // Function to remove hunger effects from an actor
 export const removeHungerEffects = async (actor) => {
-  const hungerEffectLabel = localize('hungerEffect');
+  // ✅ Find the existing hunger effect using the flag
+  const existingEffect = actor.effects.find(effect => effect.flags?.fit?.hungerEffect);
 
-  // Get existing hunger effects
-  const hungerEffects = actor.effects.filter(effect => effect.name === hungerEffectLabel);
-
-  for (const effect of hungerEffects) {
-    if (!actor.effects.has(effect.id)) {
-      console.warn(`⚠️ Warning: Hunger Effect ID ${effect.id} does not exist for ${actor.name}. Skipping deletion.`);
-      continue;
-    }
-      await effect.delete();
+  if (existingEffect) {
+      console.log(`❌ Removing Hunger Effect: ${existingEffect.label} from ${actor.name}`);
+      await existingEffect.delete();
   }
 
-  // Clear the hungerActiveEffect flag if effects were found
-  if (hungerEffects.length > 0) {
-    await actor.setFlag('fit', 'hungerActiveEffect', null);
-  }
+  // ✅ Clear stored hunger effect flag
+  await actor.unsetFlag('fit', 'hungerActiveEffect');
+  console.log(`✔ Cleared hunger effect from ${actor.name}`);
 
   Hooks.call('removeHungerEffects', actor);
-}
+};
+
 
 
