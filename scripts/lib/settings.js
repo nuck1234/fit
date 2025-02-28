@@ -59,6 +59,17 @@ await game.settings.register('fit', 'baseTolerance', {
   config: true, // This makes it visible in the settings UI.
   type: Number, // The setting must be a number.
   default: 1, // Default value is 3 days, per D&D 5e rules.
+  requiresReload: true
+});
+
+await game.settings.register("fit", "baseRest", {
+  name: "Base Rest Tolerance", // ✅ New Setting
+  hint: "The base number of days a character can go without rest before suffering exhaustion.",
+  scope: "world",
+  config: true,
+  type: Number,
+  default: 1, // Default value (adjustable)
+  requiresReload: true
 });
 
   // Register the maximum level of exhaustion that can be applied due to hunger.

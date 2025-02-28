@@ -6,6 +6,7 @@ import { daysFromSeconds } from "./time.js"; // Utility functions to calculate t
 
 
 
+
 /*-------------------------------------------------
 Helper function to calculate daysSinceLastRestForActor
 ----------------------------------------------------*/
@@ -26,11 +27,15 @@ export const daysSinceLastRestForActor = (actor) => {
 
   let daysSinceLastRest = daysFromSeconds(elapsedTime);
   
+  
   // ✅ Cap the max days without rest at 6 (to align with exhaustion limit)
-  daysSinceLastRest = Math.min(6, daysSinceLastRest);
+  // ✅ Adjust the cap dynamically to include baseRest
+  const baseRest = game.settings.get('fit', 'baseRest') || 0; // ✅ Get base rest tolerance
+  const maxDaysWithoutRest = 6 + baseRest; 
+  daysSinceLastRest = Math.min(maxDaysWithoutRest, daysSinceLastRest); 
 
   console.log(`🛑 Days Without Rest for ${actor.name}:`, daysSinceLastRest);
-  
+
   return Math.max(daysSinceLastRest, 0);
 };
 /*--------------------------------------------------------------------
@@ -56,37 +61,36 @@ export const exhaustionLevel = (actor) => {
 // Function to be used for exhaustion tracking
 export const trackExhaustion = async (actor) => {
   const tokenInScene = game.scenes.active?.tokens.some(token => token.actorId === actor.id);
-  
+
   if (!tokenInScene) {
-    if (actor.getFlag('fit', 'exhaustionElapsedTime')) return; // ✅ Prevent multiple saves
+      if (actor.getFlag('fit', 'exhaustionElapsedTime')) return; // ✅ Prevent multiple saves
 
-    // ✅ Capture the frozen exhaustion state
-    const exhaustionLevel = actor.getFlag('fit', 'exhaustionLevel') || 0;
-    await actor.setFlag('fit', 'exhaustionElapsedTime', exhaustionLevel);
-
-    return; // ✅ Stop exhaustion updates off-canvas
+      // ✅ Capture the frozen exhaustion state
+      const exhaustionLevel = actor.getFlag('fit', 'exhaustionLevel') || 0;
+      await actor.setFlag('fit', 'exhaustionElapsedTime', exhaustionLevel);
+      return; // ✅ Stop exhaustion updates off-canvas
   }
 
   // ✅ If the PC is back on canvas, restore exhaustion
   if (actor.getFlag('fit', 'exhaustionElapsedTime')) {
-    const storedExhaustion = actor.getFlag('fit', 'exhaustionElapsedTime');
-    await actor.setFlag('fit', 'exhaustionLevel', storedExhaustion);
-    await actor.unsetFlag('fit', 'exhaustionElapsedTime');
+      const storedExhaustion = actor.getFlag('fit', 'exhaustionElapsedTime');
+      await actor.setFlag('fit', 'exhaustionLevel', storedExhaustion);
+      await actor.unsetFlag('fit', 'exhaustionElapsedTime');
   }
 
-  
+  const baseRest = game.settings.get('fit', 'baseRest'); // ✅ Get base rest tolerance from settings
   const daysWithoutRest = daysSinceLastRestForActor(actor);
- // console.log(`🛠 Debug: Richard Days without rest: ${daysWithoutRest}`);
+  
+  let exhaustionLevel = Math.max(0, Math.floor((daysWithoutRest - baseRest) / 1)); // ✅ Apply base rest before exhaustion starts
 
-  let exhaustionLevel = Math.floor(daysWithoutRest / 1); // to be looked at in the future as an en
- 
-   // 🔄 Update the actor’s exhaustion directly
-   await actor.update({ "system.attributes.exhaustion": exhaustionLevel });
+  // 🔄 Update the actor’s exhaustion directly
+  await actor.update({ "system.attributes.exhaustion": exhaustionLevel });
 
-   // 🔄 Trigger the Hook to update UI
-   Hooks.call('updateExhaustionEffect', actor, exhaustionLevel);
-
+  // 🔄 Trigger the Hook to update UI
+  Hooks.call('updateExhaustionEffect', actor, exhaustionLevel);
 };
+
+
 
 // Function to update the last rest time for an actor
 export const setLastRestTime = async (actor) => {
