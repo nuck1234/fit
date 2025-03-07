@@ -20,6 +20,8 @@ const registerSettings = async () => {
     requiresReload: true
 })
 
+
+
 await game.settings.register("fit", "restTracking", {
   name: "Enable Rest Tracking",
   hint: "If enabled, rest tracking will be active. Uncheck to disable rest tracking.",
@@ -41,7 +43,7 @@ await game.settings.register("fit", "restTracking", {
     default: true,
   })
 
-  // Register the number of rations required per day per actor.
+  /* Register the number of rations required per day per actor.
   await game.settings.register('fit', 'rationsPerDay', {
     name: "Rations Per Day",
     hint: "Each actor consumes this number of rations per day",
@@ -50,6 +52,7 @@ await game.settings.register("fit", "restTracking", {
     type: Number,
     default: 1,
   })
+    */
 
   // Register the base tolerance (number of days without food before hunger starts).
 await game.settings.register('fit', 'baseTolerance', {
@@ -72,7 +75,7 @@ await game.settings.register("fit", "baseRest", {
   requiresReload: true
 });
 
-  // Register the maximum level of exhaustion that can be applied due to hunger.
+  /* Register the maximum level of exhaustion that can be applied due to hunger.
   await game.settings.register('fit', 'maxExhaustion', {
     name: "Max Exhaustion to apply",
     hint: "Apply no more than this many levels of exhaustion due to hunger and thirst",
@@ -81,6 +84,17 @@ await game.settings.register("fit", "baseRest", {
     type: Number,
     default: 2,
   })
+*/  
+  await game.settings.register("fit", "hungerEffect", {
+    name: "Enable Hunger additional effects",
+    hint: "If enabled, hunger additional effects will be active reducing the Max Hit Points for every hunger level. Check to hunger effect.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false, // Default: Hunger tracking OFF when checked
+    requiresReload: true
+})
+
 
   // Register the name of the item to be treated as rations in the system.
   await game.settings.register('fit', 'rationName', {
