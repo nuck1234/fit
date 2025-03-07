@@ -9,12 +9,12 @@ import { resetRestAfterRest, restIndex, restLevel } from "../rested.js"; // Func
 import { localize } from '../utils.js'; // Utility for localization of text.
   
 /* =======================
- Hunger Mechanics
+ Mechanics
 ========================= */
 
-/*-------------------------------------------------
-Function updateCharacterSheet
----------------------------------------------------*/
+/*----------------------------------------------------
+Function updateCharacterSheet to track hunger and rest
+-----------------------------------------------------*/
 function updateCharacterSheet(app, html, sheet) {
 
   // ✅ Check if the module is enabled and hunger tracking is enabled
@@ -53,7 +53,7 @@ function updateCharacterSheet(app, html, sheet) {
         }
 
 
-  // Renders the hunger UI element on the character sheet.
+  // Renders the UI elements on the character sheet.
    Hooks.once('ready', () => {
     console.log("🛠 Debug: DND5e UI Hooks Initialized");
     Hooks.on('renderActorSheet5eCharacter', (app, html, sheet) => updateCharacterSheet(app, html, sheet));
@@ -61,35 +61,7 @@ function updateCharacterSheet(app, html, sheet) {
   
 
     
-/*-------------------------------------------------
-CONSUME FOOD
----------------------------------------------------*/  
-  //Consume food from inventory
-  Hooks.on('preUpdateItem', async (item, change) => {
-  if (change.hasOwnProperty('sort')) return; // Ignore reordering
-   
-  // Check if the item's name matches the configured ration name
-  if (game.settings.get('fit', 'rationName') === item.name) {
-    const actor = game.actors.get(item.actor.id);
- 
-    if (!actor) {
-    console.error("Actor not found for item:", item);
-  return;
-    }
- 
-  // Determine if the item was consumed based on its uses or quantity
-     const consumedUses = item.system.uses?.value !== undefined && change.system.uses?.value === item.system.uses.value - 1;
-     const consumedQuantity = item.system.quantity !== undefined && change.system.quantity === item.system.quantity - 1;
-    
-     if (consumedUses || consumedQuantity) {
-        console.log(`${actor.name} consumed a ration directly from inventory.`);
-   
-  // ✅ Now calls `consumeFood()` from hunger.js inside dnd5e.js
-     await consumeFood(actor);
-        }
-      }
-    });
-    
+
     /*-------------------------------------------------
     HUNGER EFFECTS
     ---------------------------------------------------*/
@@ -105,6 +77,8 @@ CONSUME FOOD
 
       // Apply or update hunger effects if the actor is hungry.
       if (daysHungry >= 1) { // ✅ Apply effects for ANY hunger, not just <= 5
+
+        if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "hungerEffect")) return; // ✅ Stops additional hunger effects if disabled
         await removeHungerEffects(actor); // ✅ Ensure old effect is removed before applying a new one
         const config = activeEffectConfig(actor, daysHungry);
         await addOrUpdateHungerEffect(actor, config);
@@ -112,6 +86,7 @@ CONSUME FOOD
       
       // ✅ Ensure effects do NOT get removed at daysHungry > 5
       if (daysHungry > 5) {
+        if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "hungerEffect")) return; // ✅ Stops additional hunger effects if disabled
         console.log(`⚠ ${actor.name} is starving (Hunger: ${daysHungry} days). Effects remain active.`);
       }
 
@@ -126,6 +101,7 @@ CONSUME FOOD
   }
     // Helper function to configure active effects based on hunger.
     export function activeEffectConfig(actor, daysHungry) {
+      if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "hungerEffect")) return; // ✅ Stops additional hunger effects if disabled
       const currentHungerLevel = hungerLevel(actor); // Get the actual hunger level
   
       return {
@@ -139,9 +115,9 @@ CONSUME FOOD
       };
   }
 
-    /*=======================
-    Update Exhaustion UI
-    =========================*/
+    /*============================================
+    Update Exhaustion UI based on Rest and Hunger
+    =============================================*/
   
     export const updateExhaustion = (actor) => {
         if (!game.settings.get("fit", "enabled")) return;
@@ -183,48 +159,36 @@ Hooks.on('createChatMessage', async (message) => {
   }
 });
 
+/*==================================================
+CONSUME FOOD
+===================================================*/  
+  //Consume food from inventory
+  Hooks.on('preUpdateItem', async (item, change) => {
+    if (change.hasOwnProperty('sort')) return; // Ignore reordering
+     
+    // Check if the item's name matches the configured ration name
+    if (game.settings.get('fit', 'rationName') === item.name) {
+      const actor = game.actors.get(item.actor.id);
+   
+      if (!actor) {
+      console.error("Actor not found for item:", item);
+    return;
+      }
+   
+    // Determine if the item was consumed based on its uses or quantity
+       const consumedUses = item.system.uses?.value !== undefined && change.system.uses?.value === item.system.uses.value - 1;
+       const consumedQuantity = item.system.quantity !== undefined && change.system.quantity === item.system.quantity - 1;
+      
+       if (consumedUses || consumedQuantity) {
+          console.log(`${actor.name} consumed a ration directly from inventory.`);
+     
+    // ✅ Now calls `consumeFood()` from hunger.js inside dnd5e.js
+       await consumeFood(actor);
+          }
+        }
+      });
+      
 
-/* =========================
-   Rest Mechanics
-   ========================= 
-  // Function to update exhaustion without modifying the UI
-  export const updateExhaustion = (actor) => {
-  
-    // ✅ Stops rest if disabled
-  if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "restTracking")) return; // ✅ Stops rest reset if disabled
-  restIndex(actor);
-};
-
-  // Function to integrate exhaustion tracking with dnd5e.js
-  export const integrateExhaustionWithDnd5e = (actor) => {
-  updateExhaustion(actor);
-};
-  // Hook into Foundry's updateRestEffect to update the character's exhaustion attribute
-  Hooks.on('updateRestEffect', async (actor, restLevel) => {
-  
-  // ✅ Stops rest if disabled
-  if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "restTracking")) return; // ✅ Stops rest reset if disabled
-
-  // 🔄 Update the character's exhaustion attribute in Foundry
-  await actor.update({ "system.attributes.exhaustion": restLevel });
-
-  // 🔄 Refresh the actor's sheet to reflect exhaustion changes
-  if (actor.sheet) {
-      actor.sheet.render();
-  }
-});
-    // ✅ Hook into Foundry's chat messages to detect long rest messages
-Hooks.on('createChatMessage', async (message) => {
-  const content = message.content.toLowerCase();
-  if (content.includes("takes a long rest")) {
-    const actor = game.actors.get(message.speaker.actor);
-    if (actor) {
-
-      // ✅ Always use the pre-defined instance
-      await resetRestAfterRest(actor);
-    }
-  }
-});  // ✅ FINAL Correct closing brace for the class*/
 
 
 
