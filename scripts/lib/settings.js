@@ -20,9 +20,9 @@ const registerSettings = async () => {
     requiresReload: true
 })
 
-await game.settings.register("fit", "exhaustionTracking", {
-  name: "Enable Exhaustion Tracking",
-  hint: "If enabled, exhaustion tracking will be active. Uncheck to disable exhaustion tracking.",
+await game.settings.register("fit", "restTracking", {
+  name: "Enable Rest Tracking",
+  hint: "If enabled, rest tracking will be active. Uncheck to disable rest tracking.",
   scope: "world",
   config: true,
   type: Boolean,

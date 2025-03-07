@@ -4,8 +4,8 @@
 
 import { daysFromSeconds } from "../time.js"; // Utility functions to calculate time differences.
 import { hungerChatMessage, sendHungerNotification } from "../chat.js"; // Function to send hunger notifications to the chat.
-import { hungerLevel, hungerIcon, addOrUpdateHungerEffect, removeHungerEffects, daysHungryForActor, consumeFood } from "../hunger.js"; // Functions and utilities for managing hunger levels and effects.
-import { resetExhaustionAfterRest, exhaustionIndex } from "../rested.js"; // Function to set the last rest timestamp for an actor.
+import { hungerLevel, hungerIcon, addOrUpdateHungerEffect, removeHungerEffects, daysHungryForActor, consumeFood,hungerIndex } from "../hunger.js"; // Functions and utilities for managing hunger levels and effects.
+import { resetRestAfterRest, restIndex, restLevel } from "../rested.js"; // Function to set the last rest timestamp for an actor.
 import { localize } from '../utils.js'; // Utility for localization of text.
   
 /* =======================
@@ -31,7 +31,7 @@ function updateCharacterSheet(app, html, sheet) {
   console.error(`Actor not found for ID: ${actorId}`);
      return;
       }
-  const daysHungry = daysHungryForActor(actor);
+  //const daysHungry = daysHungryForActor(actor);
 
 
     
@@ -40,14 +40,26 @@ function updateCharacterSheet(app, html, sheet) {
       
           // ✅ Add the Hunger UI element only once
           el.append(`<div class='counter flexrow hunger'><h4>Hunger</h4><div class='counter-value'>${hungerLevel(actor)}</div></div>`);
-        }
+        // ✅ Check if the module is enabled and rest tracking is enabled
   
+        if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "restTracking")) return; // ✅ Stops rest if disabled
+
+    
+      // ✅ FIX: Remove existing "Rest" counter before adding a new one
+      $(html).find('.counter.rest').remove();
+      
+          // ✅ Add the Rest UI element only once
+          el.append(`<div class='counter flexrow rest'><h4>Rest</h4><div class='counter-value'>${restLevel(actor)}</div></div>`);
+        }
+
+
   // Renders the hunger UI element on the character sheet.
    Hooks.once('ready', () => {
     console.log("🛠 Debug: DND5e UI Hooks Initialized");
     Hooks.on('renderActorSheet5eCharacter', (app, html, sheet) => updateCharacterSheet(app, html, sheet));
     });
   
+
     
 /*-------------------------------------------------
 CONSUME FOOD
@@ -112,7 +124,6 @@ CONSUME FOOD
       Hooks.call('evaluateHunger', actor);
     }
   }
-  
     // Helper function to configure active effects based on hunger.
     export function activeEffectConfig(actor, daysHungry) {
       const currentHungerLevel = hungerLevel(actor); // Get the actual hunger level
@@ -127,31 +138,75 @@ CONSUME FOOD
           duration: { rounds: 10 }
       };
   }
+
+    /*=======================
+    Update Exhaustion UI
+    =========================*/
   
+    export const updateExhaustion = (actor) => {
+        if (!game.settings.get("fit", "enabled")) return;
+
+        const trackRest = game.settings.get("fit", "restTracking");
+        const trackHunger = game.settings.get("fit", "hungerTracking");
+
+        const rest = trackRest ? restIndex(actor) : 0;
+        const hunger = trackHunger ? hungerIndex(actor) : 0;
+
+        const highestLevel = Math.max(rest, hunger);
+
+        console.log(`🛠 ${actor.name} | Rest Index: ${rest} | Hunger Index: ${hunger} | Exhaustion Updated To: ${highestLevel}`);
+
+        actor.update({ "system.attributes.exhaustion": highestLevel });
+    };
+
+
+Hooks.on('updateRestEffect', async (actor) => {
+  if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "restTracking")) return;
+
+  // ✅ Update exhaustion based on highest of rest and hunger
+  updateExhaustion(actor);
+
+  if (actor.sheet) {
+      actor.sheet.render();
+  }
+});
+Hooks.on('createChatMessage', async (message) => {
+  const content = message.content.toLowerCase();
+  if (content.includes("takes a long rest")) {
+      const actor = game.actors.get(message.speaker.actor);
+      if (actor) {
+          await resetRestAfterRest(actor);
+
+          // ✅ Update exhaustion after resetting rest
+          updateExhaustion(actor);
+      }
+  }
+});
+
 
 /* =========================
-   Exhaustion Mechanics
-   ========================= */
+   Rest Mechanics
+   ========================= 
   // Function to update exhaustion without modifying the UI
   export const updateExhaustion = (actor) => {
   
-    // ✅ Stops exhaustion if disabled
-  if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "exhaustionTracking")) return; // ✅ Stops exhaustion reset if disabled
-  exhaustionIndex(actor);
+    // ✅ Stops rest if disabled
+  if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "restTracking")) return; // ✅ Stops rest reset if disabled
+  restIndex(actor);
 };
 
   // Function to integrate exhaustion tracking with dnd5e.js
   export const integrateExhaustionWithDnd5e = (actor) => {
   updateExhaustion(actor);
 };
-  // Hook into Foundry's updateExhaustionEffect to update the character's exhaustion attribute
-  Hooks.on('updateExhaustionEffect', async (actor, exhaustionLevel) => {
+  // Hook into Foundry's updateRestEffect to update the character's exhaustion attribute
+  Hooks.on('updateRestEffect', async (actor, restLevel) => {
   
-  // ✅ Stops exhaustion if disabled
-  if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "exhaustionTracking")) return; // ✅ Stops exhaustion reset if disabled
+  // ✅ Stops rest if disabled
+  if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "restTracking")) return; // ✅ Stops rest reset if disabled
 
   // 🔄 Update the character's exhaustion attribute in Foundry
-  await actor.update({ "system.attributes.exhaustion": exhaustionLevel });
+  await actor.update({ "system.attributes.exhaustion": restLevel });
 
   // 🔄 Refresh the actor's sheet to reflect exhaustion changes
   if (actor.sheet) {
@@ -166,10 +221,10 @@ Hooks.on('createChatMessage', async (message) => {
     if (actor) {
 
       // ✅ Always use the pre-defined instance
-      await resetExhaustionAfterRest(actor);
+      await resetRestAfterRest(actor);
     }
   }
-});  // ✅ FINAL Correct closing brace for the class
+});  // ✅ FINAL Correct closing brace for the class*/
 
 
 

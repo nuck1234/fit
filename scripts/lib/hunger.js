@@ -2,7 +2,7 @@
 import { DEFAULT_HUNGER_LEVEL, HUNGER_LEVELS, HUNGER_ICONS } from './constants.js'
 import { daysFromSeconds } from './time.js';
 import { localize } from './utils.js';
-
+import { updateExhaustion } from "./systems/dnd5e.js";
 
 /* =========================
    Hunger Mechanics
@@ -188,11 +188,14 @@ export const addOrUpdateHungerEffect = async (actor, activeEffectConfig) => {
 
 // Function to consume food and reset the hunger state of an actor
 export const consumeFood = async (actor) => {
-  await removeHungerEffects(actor)
-  await initializeHunger(actor)
-  
-  Hooks.call('consumeFood', actor)
-}
+  await removeHungerEffects(actor);
+  await initializeHunger(actor);
+
+  // ✅ Recalculate exhaustion after eating
+  updateExhaustion(actor);
+
+  Hooks.call('consumeFood', actor);
+};
   
 // Function to remove hunger effects from an actor
 export const removeHungerEffects = async (actor) => {
