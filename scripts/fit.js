@@ -4,7 +4,7 @@ import { initializeHunger, updateHunger, unsetHunger } from "./lib/hunger.js";
 import { preloadTemplates } from './lib/preloadTemplates.js';
 import HungerTable from './lib/hunger-table.js';
 import { evaluateHunger } from './lib/systems/dnd5e.js';
-import { trackExhaustion } from "./lib/rested.js";
+import { trackRest } from "./lib/rested.js";
 
 // A no-operation system class for unsupported game systems
 class NoOpSystem {
@@ -84,12 +84,12 @@ class fit {
       const elapsedRestTime = game.time.worldTime - lastRestAt;
       await actor.setFlag('fit', 'restElapsedTime', elapsedRestTime);
     
-      // ✅ Store exhaustion level
-      const exhaustionLevel = actor.getFlag('fit', 'exhaustionLevel') || 0;
-      await actor.setFlag('fit', 'storedExhaustionLevel', exhaustionLevel);
+      // ✅ Store restLevel
+      const restLevel = actor.getFlag('fit', 'restLevel') || 0;
+      await actor.setFlag('fit', 'storedrestLevel', restLevel);
     
       // ✅ Output stored values to console for debugging
-      console.log(`🔍 Frozen for ${actor.name}:`, { lastMealAt, elapsedHungerTime, lastRestAt, elapsedRestTime, exhaustionLevel });
+      console.log(`🔍 Frozen for ${actor.name}:`, { lastMealAt, elapsedHungerTime, lastRestAt, elapsedRestTime, restLevel });
     });
     
 
@@ -130,8 +130,8 @@ class fit {
 
         }
         
-        if (game.settings.get("fit", "exhaustionTracking")) { // ✅ Only updates exhaustion if enabled
-        trackExhaustion(actor); // ✅ Now only updates exhaustion if the PC is in the active scene
+        if (game.settings.get("fit", "restTracking")) { // ✅ Only updates rest if enabled
+        trackRest(actor); // ✅ Now only updates rest if the PC is in the active scene
         }
       });
     });

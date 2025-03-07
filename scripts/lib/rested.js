@@ -1,9 +1,9 @@
-// This script integrates exhaustion tracking into the D&D 5e system within the Time-2-Eat module.
-// It includes logic to track exhaustion, reset it after a long rest, and log relevant data.
+// This script integrates rest tracking into the D&D 5e system within the Time-2-Eat module.
+// It includes logic to track rest, reset it after a long rest, and log relevant data.
 
-import { DEFAULT_EXHAUSTION_LEVEL, EXHAUSTION_LEVELS, } from './constants.js';// Ensure exhaustion icons are imported for consistency
+import { DEFAULT_REST_LEVEL, REST_LEVEL, } from './constants.js';// Ensure rest icons are imported for consistency
 import { daysFromSeconds } from "./time.js"; // Utility functions to calculate time differences.
-
+import { updateExhaustion } from "./systems/dnd5e.js";
 
 
 
@@ -28,7 +28,7 @@ export const daysSinceLastRestForActor = (actor) => {
   let daysSinceLastRest = daysFromSeconds(elapsedTime);
   
   
-  // ✅ Cap the max days without rest at 6 (to align with exhaustion limit)
+  // ✅ Cap the max days without rest at 6 (to align with rest limit)
   // ✅ Adjust the cap dynamically to include baseRest
   const baseRest = game.settings.get('fit', 'baseRest') || 0; // ✅ Get base rest tolerance
   const maxDaysWithoutRest = 6 + baseRest; 
@@ -39,55 +39,55 @@ export const daysSinceLastRestForActor = (actor) => {
   return Math.max(daysSinceLastRest, 0);
 };
 /*--------------------------------------------------------------------
- Function to calculate the exhaustionIndex based on daysSinceLastRestForActor.
+ Function to calculate the restIndex based on daysSinceLastRestForActor.
  -------------------------------------------------------------------*/
-export const exhaustionIndex = (actor) => {
+export const restIndex = (actor) => {
   if (!actor || typeof actor !== "object") {
     return 0;
   }
   const daysWithoutRest = daysSinceLastRestForActor(actor);
-  return Math.min(DEFAULT_EXHAUSTION_LEVEL + daysWithoutRest, EXHAUSTION_LEVELS.length - 1);
+  return Math.min(DEFAULT_REST_LEVEL + daysWithoutRest, REST_LEVEL.length - 1);
 };
 
 /*--------------------------------------------------------------------
- Function to calculate the exhaustionLevel (in words) based on exhaustionIndex.
+ Function to calculate the restLevel (in words) based on restIndex.
  ---------------------------------------------------------------------*/
-export const exhaustionLevel = (actor) => {
-  return EXHAUSTION_LEVELS[exhaustionIndex(actor)] || "unknown";
+export const restLevel = (actor) => {
+  return REST_LEVEL[restIndex(actor)] || "unknown";
 };
 
 
 
-// Function to be used for exhaustion tracking
-export const trackExhaustion = async (actor) => {
+// Function to be used for rest tracking
+export const trackRest = async (actor) => {
   const tokenInScene = game.scenes.active?.tokens.some(token => token.actorId === actor.id);
 
   if (!tokenInScene) {
-      if (actor.getFlag('fit', 'exhaustionElapsedTime')) return; // ✅ Prevent multiple saves
+      if (actor.getFlag('fit', 'restElapsedTime')) return; // ✅ Prevent multiple saves
 
-      // ✅ Capture the frozen exhaustion state
-      const exhaustionLevel = actor.getFlag('fit', 'exhaustionLevel') || 0;
-      await actor.setFlag('fit', 'exhaustionElapsedTime', exhaustionLevel);
-      return; // ✅ Stop exhaustion updates off-canvas
+      // ✅ Capture the frozen rest state
+      const restLevel = actor.getFlag('fit', 'restLevel') || 0;
+      await actor.setFlag('fit', 'restElapsedTime', restLevel);
+      return; // ✅ Stop rest updates off-canvas
   }
 
-  // ✅ If the PC is back on canvas, restore exhaustion
-  if (actor.getFlag('fit', 'exhaustionElapsedTime')) {
-      const storedExhaustion = actor.getFlag('fit', 'exhaustionElapsedTime');
-      await actor.setFlag('fit', 'exhaustionLevel', storedExhaustion);
-      await actor.unsetFlag('fit', 'exhaustionElapsedTime');
+  // ✅ If the PC is back on canvas, restore rest
+  if (actor.getFlag('fit', 'restElapsedTime')) {
+      const storedRest = actor.getFlag('fit', 'restElapsedTime');
+      await actor.setFlag('fit', 'restLevel', storedRest);
+      await actor.unsetFlag('fit', 'restElapsedTime');
   }
 
   const baseRest = game.settings.get('fit', 'baseRest'); // ✅ Get base rest tolerance from settings
   const daysWithoutRest = daysSinceLastRestForActor(actor);
   
-  let exhaustionLevel = Math.max(0, Math.floor((daysWithoutRest - baseRest) / 1)); // ✅ Apply base rest before exhaustion starts
+  let restLevel = Math.max(0, Math.floor((daysWithoutRest - baseRest) / 1)); // ✅ Apply base rest before rest starts
 
   // 🔄 Update the actor’s exhaustion directly
-  await actor.update({ "system.attributes.exhaustion": exhaustionLevel });
+  await actor.update({ "system.attributes.exhaustion": restLevel });
 
   // 🔄 Trigger the Hook to update UI
-  Hooks.call('updateExhaustionEffect', actor, exhaustionLevel);
+  Hooks.call('updateRestEffect', actor, restLevel);
 };
 
 
@@ -108,21 +108,20 @@ Hooks.once("ready", () => {
   if (fitModule) {
     fitModule.api = fitModule.api || {};
     Object.assign(fitModule.api, {
-      resetExhaustionAfterRest: resetExhaustionAfterRest // ✅ Calls function directly
+      resetRestAfterRest: resetRestAfterRest // ✅ Calls function directly
     });
   //  console.log("🛠 Debug: fit module API functions exposed for debugging");
   }
 });
-export async function resetExhaustionAfterRest(actor) {
+export async function resetRestAfterRest(actor) {
   if (!actor) return;
+  
+ // ✅ Recalculate exhaustion properly after resetting rest
+  updateExhaustion(actor);
+  await setLastRestTime(actor); // Reset the last rest time.
 
+ 
 
-  // ✅ Set the last rest time to now
-  await setLastRestTime(actor);
-
-  // ✅ Reset exhaustion
-  await actor.update({ "system.attributes.exhaustion": 0 });
-
-  // 🔄 Trigger the Hook to update UI
-  Hooks.call("updateExhaustionEffect", actor);
+  console.log(`🛠 ${actor.name} | Rest reset, exhaustion recalculated.`);
 }
+
