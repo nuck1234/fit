@@ -44,7 +44,7 @@ export const daysHungryForActor = (actor) => {
   if (!tokenInScene) {
     // ✅ If PC is off-canvas, use the frozen hunger time
     elapsedTime = actor.getFlag('fit', 'hungerElapsedTime') || 0;
-    console.log(`🛑 Using frozen hunger time for ${actor.name}:`, elapsedTime);
+   
   } else {
     // ✅ If PC is on-canvas, calculate hunger normally
     const lastMealAt = actor.getFlag('fit', 'lastMealAt') || game.time.worldTime;
@@ -90,6 +90,7 @@ export const daysHungryForActor = (actor) => {
     case "Ravenous": return 'modules/fit/templates/icons/level_3.png'; // ravenous
     case "Famished": return 'modules/fit/templates/icons/level_4.png'; // famished
     case "Starving": return 'modules/fit/templates/icons/level_5.png'; // starving
+    case "unconscious": return 'modules/fit/templates/icons/level_6.png'; // dead
     default: return 'modules/fit/templates/icons/level_0.png'; // Default icon (in case of error)
   }
 }
@@ -100,12 +101,11 @@ export const updateHunger = async (actor, elapsed) => {
   const tokenInScene = game.scenes.active?.tokens.some(token => token.actorId === actor.id);
 
   // ✅ Step 1: Check if the token is in the scene
-  console.log(`🔍 Checking token presence for ${actor.name}:`, { tokenInScene });
 
   if (!tokenInScene) {
     // ✅ Step 2: Check if hunger is already frozen
     if (actor.getFlag('fit', 'hungerElapsedTime')) {
-      console.log(`🛑 Hunger already frozen for ${actor.name}, skipping update.`);
+      
       return;
     }
 
@@ -114,8 +114,7 @@ export const updateHunger = async (actor, elapsed) => {
     const elapsedTime = game.time.worldTime - lastMealAt;
 
     await actor.setFlag('fit', 'hungerElapsedTime', elapsedTime);
-    console.log(`❄ Freezing hunger for ${actor.name}:`, { lastMealAt, elapsedTime });
-
+    
     return; // ✅ Completely stop hunger updates off-canvas
   }
 
@@ -129,8 +128,7 @@ export const updateHunger = async (actor, elapsed) => {
     await actor.setFlag('fit', 'secondsSinceLastMeal', frozenElapsed);
     await actor.unsetFlag('fit', 'hungerElapsedTime');
 
-    console.log(`▶ Hunger resumed for ${actor.name}:`, { currentTime, frozenElapsed });
-  }
+      }
 
   // ✅ Only update hunger when the PC is on canvas
   const seconds = actor.getFlag('fit', 'secondsSinceLastMeal') || 0;
@@ -180,8 +178,7 @@ export const addOrUpdateHungerEffect = async (actor, activeEffectConfig) => {
   // ✅ Apply the new hunger effect
   let effect = await actor.createEmbeddedDocuments("ActiveEffect", [activeEffectConfig]);
   await actor.setFlag('fit', 'hungerActiveEffect', effect[0].id);
-  console.log(`🆕 Applied Hunger Effect: ${activeEffectConfig.label} to ${actor.name}`);
-
+ 
   Hooks.call('addOrUpdateHungerEffect', actor, effect);
 };
 
@@ -203,13 +200,11 @@ export const removeHungerEffects = async (actor) => {
   const existingEffect = actor.effects.find(effect => effect.flags?.fit?.hungerEffect);
 
   if (existingEffect) {
-      console.log(`❌ Removing Hunger Effect: ${existingEffect.label} from ${actor.name}`);
-      await existingEffect.delete();
+       await existingEffect.delete();
   }
 
   // ✅ Clear stored hunger effect flag
   await actor.unsetFlag('fit', 'hungerActiveEffect');
-  console.log(`✔ Cleared hunger effect from ${actor.name}`);
 
   Hooks.call('removeHungerEffects', actor);
 };

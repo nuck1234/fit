@@ -18,7 +18,7 @@ export const daysSinceLastRestForActor = (actor) => {
   if (!tokenInScene) {
     // ✅ Use frozen rest time instead of live calculation
     elapsedTime = actor.getFlag('fit', 'restElapsedTime') || 0;
-    console.log(`🛑 Using frozen rest time for ${actor.name}:`, elapsedTime);
+    
   } else {
     // ✅ Normal calculation for on-scene PCs
     const lastRestAt = actor.getFlag('fit', 'lastRestAt') || game.time.worldTime;
@@ -33,8 +33,6 @@ export const daysSinceLastRestForActor = (actor) => {
   const baseRest = game.settings.get('fit', 'baseRest') || 0; // ✅ Get base rest tolerance
   const maxDaysWithoutRest = 6 + baseRest; 
   daysSinceLastRest = Math.min(maxDaysWithoutRest, daysSinceLastRest); 
-
-  console.log(`🛑 Days Without Rest for ${actor.name}:`, daysSinceLastRest);
 
   return Math.max(daysSinceLastRest, 0);
 };
@@ -64,11 +62,9 @@ export const trackRest = async (actor) => {
 
   if (!tokenInScene) {
       if (actor.getFlag('fit', 'restElapsedTime')) return; // ✅ Prevent multiple saves
-
-      // ✅ Capture the frozen rest state
       const restLevel = actor.getFlag('fit', 'restLevel') || 0;
       await actor.setFlag('fit', 'restElapsedTime', restLevel);
-      return; // ✅ Stop rest updates off-canvas
+      return;
   }
 
   // ✅ If the PC is back on canvas, restore rest
@@ -78,17 +74,18 @@ export const trackRest = async (actor) => {
       await actor.unsetFlag('fit', 'restElapsedTime');
   }
 
-  const baseRest = game.settings.get('fit', 'baseRest'); // ✅ Get base rest tolerance from settings
+  const baseRest = game.settings.get('fit', 'baseRest');
   const daysWithoutRest = daysSinceLastRestForActor(actor);
-  
-  let restLevel = Math.max(0, Math.floor((daysWithoutRest - baseRest) / 1)); // ✅ Apply base rest before rest starts
 
-  // 🔄 Update the actor’s exhaustion directly
-  await actor.update({ "system.attributes.exhaustion": restLevel });
+  let restLevel = Math.max(0, Math.floor(daysWithoutRest - baseRest)); // ✅ Apply base rest before exhaustion starts
 
-  // 🔄 Trigger the Hook to update UI
+  // ✅ Store rest level as a flag (DO NOT update exhaustion here)
+  await actor.setFlag("fit", "restLevel", restLevel);
+
+  // ✅ Call the exhaustion update in dnd5e.js instead
   Hooks.call('updateRestEffect', actor, restLevel);
 };
+
 
 
 
@@ -98,7 +95,7 @@ export const setLastRestTime = async (actor) => {
     return;
   }
   const now = game.time.worldTime;
- // console.log(`🛠 Debug: ${actor.name} - Last rest time updating to: ${now}`);
+
   await actor.setFlag('fit', 'lastRestAt', now);
 };
 
@@ -110,18 +107,17 @@ Hooks.once("ready", () => {
     Object.assign(fitModule.api, {
       resetRestAfterRest: resetRestAfterRest // ✅ Calls function directly
     });
-  //  console.log("🛠 Debug: fit module API functions exposed for debugging");
+
   }
 });
 export async function resetRestAfterRest(actor) {
   if (!actor) return;
+
+  await setLastRestTime(actor); // ✅ Reset last rest time only
+
+  // ✅ Instead of updating exhaustion, call the Hook so dnd5e.js handles it
+  Hooks.call("updateRestEffect", actor);
   
- // ✅ Recalculate exhaustion properly after resetting rest
-  updateExhaustion(actor);
-  await setLastRestTime(actor); // Reset the last rest time.
 
- 
-
-  console.log(`🛠 ${actor.name} | Rest reset, exhaustion recalculated.`);
 }
 

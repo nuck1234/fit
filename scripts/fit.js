@@ -88,8 +88,7 @@ class fit {
       const restLevel = actor.getFlag('fit', 'restLevel') || 0;
       await actor.setFlag('fit', 'storedrestLevel', restLevel);
     
-      // ✅ Output stored values to console for debugging
-      console.log(`🔍 Frozen for ${actor.name}:`, { lastMealAt, elapsedHungerTime, lastRestAt, elapsedRestTime, restLevel });
+  
     });
     
 
@@ -155,7 +154,7 @@ class fit {
 
   showHungerTable() {
     // Display the hunger table for the GM via button, not automatic hooks
-   // console.log("Activating Hunger Table via button with system:", this.system);
+   
     HungerTable.activate(this.system);
   }
 
@@ -176,13 +175,13 @@ Hooks.once('init', async () => {
 });
 
 Hooks.once('ready', async () => {
-  console.log("fit module ready!");
+
 });
 
 // Add a button to the Scene Controls for toggling the Hunger Table
 Hooks.on("getSceneControlButtons", (controls) => {
   if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "hungerTracking")) return; // ✅ Stops hunger if disabled
- // console.log("Scene Controls BEFORE addition:", controls);
+
 
   // Find the Token Controls group
   const tokenControls = controls.find((c) => c.name === "token");
@@ -201,14 +200,16 @@ Hooks.on("getSceneControlButtons", (controls) => {
     tooltip: "Toggle Hunger Table", // Tooltip description
     onClick: (isActive) => {
       if (isActive) {
-    //    console.log("Hunger Table toggled ON");
+
+    //Hunger Table toggled ON
         if (typeof game.fit?.showHungerTable === "function") {
           game.fit.showHungerTable(); // Show the Hunger Table
         } else {
           console.error("Hunger Table activation function not found.");
         }
       } else {
-  //      console.log("Hunger Table toggled OFF");
+
+  //Hunger Table toggled OFF
         if (ui.windows) {
           const hungerTableWindow = Object.values(ui.windows).find(
             (w) => w.options.title === "Hunger Table"
@@ -223,5 +224,5 @@ Hooks.on("getSceneControlButtons", (controls) => {
     },
   });
 
- // console.log("Scene Controls AFTER addition:", controls);
+
 });

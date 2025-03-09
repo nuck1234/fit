@@ -15,7 +15,8 @@ const HUNGER_LEVELS = [
   "Hungry",     // Level 4
   "Ravenous",   // Level 5
   "Famished",   // Level 6
-  "Starving"    // Level 7 (worst state)
+  "Starving",    // Level 7 (worst state)
+  "Unconscious" // Level 8 (final hunger state)
 ];
 
 // Paths to icons representing each hunger level, mapped by index to the HUNGER_LEVELS array.
@@ -27,7 +28,7 @@ const HUNGER_ICONS = [
   'modules/fit/templates/icons/level_3.png', // ravenous
   'modules/fit/templates/icons/level_4.png', // famished
   'modules/fit/templates/icons/level_5.png', // starving
-  //'modules/fit/templates/icons/level_6.png', // full future implementation
+  'modules/fit/templates/icons/level_6.png', // unconscious
   //'modules/fit/templates/icons/level_7.png'  // stuffed future implementation
 ];
 

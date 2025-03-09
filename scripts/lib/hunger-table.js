@@ -49,8 +49,7 @@ export default class HungerTable extends Application {
       };
     });
 
-    console.log("Hunger Table Data Sent to Template:", data);
-    return { actors: data };
+       return { actors: data };
   }
 
   /**
