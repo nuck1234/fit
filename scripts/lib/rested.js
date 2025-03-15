@@ -6,21 +6,22 @@ import { daysFromSeconds } from "./time.js"; // Utility functions to calculate t
 import { updateExhaustion } from "./systems/dnd5e.js";
 
 
-
 /*-------------------------------------------------
 Helper function to calculate daysSinceLastRestForActor
 ----------------------------------------------------*/
 export const daysSinceLastRestForActor = (actor) => {
-  const baseTolerance = game.settings.get('fit', 'baseTolerance') || 0;
+  if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "restTracking")) return; // ✅ Stops rest if disabled
+
+  const baseRest = game.settings.get('fit', 'baseRest') || 0;
   const tokenInScene = game.scenes.active?.tokens.some(token => token.actorId === actor.id);
 
   let elapsedTime;
   if (!tokenInScene) {
-    // ✅ Use frozen rest time instead of live calculation
+    // ✅ If PC is off-canvas, use the frozen hunger time
     elapsedTime = actor.getFlag('fit', 'restElapsedTime') || 0;
     
   } else {
-    // ✅ Normal calculation for on-scene PCs
+    // ✅ If PC is on-canvas, calculate hunger normally
     const lastRestAt = actor.getFlag('fit', 'lastRestAt') || game.time.worldTime;
     elapsedTime = game.time.worldTime - lastRestAt;
   }
@@ -28,9 +29,10 @@ export const daysSinceLastRestForActor = (actor) => {
   let daysSinceLastRest = daysFromSeconds(elapsedTime);
   
   
+
+
   // ✅ Cap the max days without rest at 6 (to align with rest limit)
   // ✅ Adjust the cap dynamically to include baseRest
-  const baseRest = game.settings.get('fit', 'baseRest') || 0; // ✅ Get base rest tolerance
   const maxDaysWithoutRest = 6 + baseRest; 
   daysSinceLastRest = Math.min(maxDaysWithoutRest, daysSinceLastRest); 
 
@@ -51,16 +53,20 @@ export const restIndex = (actor) => {
  Function to calculate the restLevel (in words) based on restIndex.
  ---------------------------------------------------------------------*/
 export const restLevel = (actor) => {
-  return REST_LEVEL[restIndex(actor)] || "unknown";
+  const level = REST_LEVEL[restIndex(actor)] || "unknown";
+  return game.i18n.localize(`${level}`); // ✅ Now localized like hungerLevel()
 };
 
-
-
-// Function to be used for rest tracking
+/*--------------------------------------------------------------------
+  Function to be used for rest tracking
+---------------------------------------------------------------------*/
 export const trackRest = async (actor) => {
   const tokenInScene = game.scenes.active?.tokens.some(token => token.actorId === actor.id);
 
+  // ✅ Step 1: Check if the token is in the scene
+
   if (!tokenInScene) {
+    // ✅ Step 2: Check if hunger is already frozen
       if (actor.getFlag('fit', 'restElapsedTime')) return; // ✅ Prevent multiple saves
       const restLevel = actor.getFlag('fit', 'restLevel') || 0;
       await actor.setFlag('fit', 'restElapsedTime', restLevel);
@@ -83,13 +89,12 @@ export const trackRest = async (actor) => {
   await actor.setFlag("fit", "restLevel", restLevel);
 
   // ✅ Call the exhaustion update in dnd5e.js instead
-  Hooks.call('updateRestEffect', actor, restLevel);
+  Hooks.call('updateExhaustionEffect', actor, restLevel);
 };
 
-
-
-
-// Function to update the last rest time for an actor
+/*-----------------------------------------------
+  Function to update the last rest time for an actor
+------------------------------------------------*/
 export const setLastRestTime = async (actor) => {
   if (!actor) {
     return;
@@ -99,7 +104,9 @@ export const setLastRestTime = async (actor) => {
   await actor.setFlag('fit', 'lastRestAt', now);
 };
 
-// Ensure API functions are registered under fit module
+/*-------------------------------------------------
+Ensure API functions are registered under fit module
+---------------------------------------------------*/
 Hooks.once("ready", () => {
   const fitModule = game.modules.get("fit");
   if (fitModule) {
@@ -107,16 +114,19 @@ Hooks.once("ready", () => {
     Object.assign(fitModule.api, {
       resetRestAfterRest: resetRestAfterRest // ✅ Calls function directly
     });
-
   }
 });
+
+/*--------------------------------------------------------------------
+ Function to reset hunger after consuming food
+ ---------------------------------------------------------------------*/
 export async function resetRestAfterRest(actor) {
   if (!actor) return;
 
   await setLastRestTime(actor); // ✅ Reset last rest time only
 
   // ✅ Instead of updating exhaustion, call the Hook so dnd5e.js handles it
-  Hooks.call("updateRestEffect", actor);
+  Hooks.call("updateExhaustionEffect", actor);
   
 
 }
