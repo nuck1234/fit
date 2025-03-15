@@ -73,32 +73,61 @@ function setupHooks() {
 
   Hooks.on('updateWorldTime', handleWorldTimeUpdate);
 }
+
 /*-------------------------------------------------
-Token Creation Event Handler
+Create new Player Characters
 ---------------------------------------------------*/
-      Hooks.on('preCreateToken', async (document, data, options) => {
+Hooks.on("createActor", async (actor) => {
+  if (!game.settings.get("fit", "enabled")) return;
+  if (actor.type !== "character") return; // ✅ Only apply to player characters
+
+  console.log(`✅ New character created: ${actor.name} - Initializing Hunger & Rest`);
+
+  // ✅ Set up hunger and rest when the actor is first created
+  await initializeHunger(actor);
+  await trackRest(actor);
+
+  // ✅ Ensure exhaustion updates immediately
+  updateExhaustion(actor);
+});
+
+
+/*-------------------------------------------------
+Token Event Handler
+---------------------------------------------------*/
+    Hooks.on("preCreateToken", async (document, data, options) => {
       const actor = game.actors.get(document.actorId);
       if (!actor || !actor.hasPlayerOwner) return;
-    
-      // ✅ Retrieve stored hunger state
+
+      const currentTime = game.time.worldTime;
+      console.log(`✅ Token created for ${actor.name} - Restoring Hunger & Rest Tracking`);
+
+      // ✅ Restore stored hunger state
       if (game.settings.get("fit", "hungerTracking")) {
-        const elapsedHungerTime = actor.getFlag('fit', 'hungerElapsedTime') || 0;
-        await actor.setFlag('fit', 'lastMealAt', currentTime - elapsedHungerTime);
-        await actor.unsetFlag('fit', 'hungerElapsedTime');
-    
-        // ✅ Apply tracking function instead of manual flag setting
-        await trackHunger(actor);
+          const elapsedHungerTime = actor.getFlag('fit', 'hungerElapsedTime') || 0;
+          await actor.setFlag('fit', 'lastMealAt', currentTime - elapsedHungerTime);
+          await actor.unsetFlag('fit', 'hungerElapsedTime');
+
+          console.log(`${actor.name} - 🍽️ Restored lastMealAt to: ${currentTime - elapsedHungerTime}`);
+
+          // ✅ Apply tracking function to ensure hunger updates
+          await trackHunger(actor);
       }
-    
-      // ✅ Retrieve stored rest state
+
+      // ✅ Restore stored rest state
       if (game.settings.get("fit", "restTracking")) {
-        const elapsedRestTime = actor.getFlag('fit', 'restElapsedTime') || 0;
-        await actor.setFlag('fit', 'lastRestAt', currentTime - elapsedRestTime);
-        await actor.unsetFlag('fit', 'restElapsedTime');
-    
-        // ✅ Apply tracking function instead of manual flag setting
-        await trackRest(actor);
+          const elapsedRestTime = actor.getFlag('fit', 'restElapsedTime') || 0;
+          await actor.setFlag('fit', 'lastRestAt', currentTime - elapsedRestTime);
+          await actor.unsetFlag('fit', 'restElapsedTime');
+
+          console.log(`${actor.name} - 💤 Restored lastRestAt to: ${currentTime - elapsedRestTime}`);
+
+          // ✅ Apply tracking function to ensure rest updates
+          await trackRest(actor);
       }
+
+      // ✅ Ensure exhaustion updates immediately
+     // updateExhaustion(actor);
     });
   
  /*-------------------------------------------------
@@ -109,23 +138,24 @@ Hooks.on('preDeleteToken', async (document) => {
   if (!actor || !actor.hasPlayerOwner) return;
 
   const currentTime = game.time.worldTime;
+  console.log(`🛑 Token deleted for ${actor.name} - Storing Off-Canvas Data`);
 
-  // ✅ Store hunger time if hunger tracking is enabled
+  // ✅ Store elapsed hunger time (same logic as rest)
   if (game.settings.get("fit", "hungerTracking")) {
     const lastMealAt = actor.getFlag('fit', 'lastMealAt') || currentTime;
     const elapsedHungerTime = currentTime - lastMealAt;
     await actor.setFlag('fit', 'hungerElapsedTime', elapsedHungerTime);
+    
+    console.log(`${actor.name} - 🍽️ Stored hunger elapsed time: ${elapsedHungerTime} seconds`);
   }
 
-  // ✅ Store rest time if rest tracking is enabled
+  // ✅ Store elapsed rest time
   if (game.settings.get("fit", "restTracking")) {
     const lastRestAt = actor.getFlag('fit', 'lastRestAt') || currentTime;
     const elapsedRestTime = currentTime - lastRestAt;
     await actor.setFlag('fit', 'restElapsedTime', elapsedRestTime);
-
-    // ✅ Store restLevel for restoration later
-    const restLevel = actor.getFlag('fit', 'restLevel') || 0;
-    await actor.setFlag('fit', 'storedrestLevel', restLevel);
+    
+    console.log(`${actor.name} - 💤 Stored rest elapsed time: ${elapsedRestTime} seconds`);
   }
 });
     
