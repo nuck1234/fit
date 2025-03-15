@@ -66,38 +66,33 @@ Hooks.once('ready', () => {
 
     // Main function to evaluate and update an actor's hunger status.
     export async function evaluateHunger(actor) {
-    const lastMealNotificationAt = actor.getFlag('fit', 'lastMealNotificationAt') || 0;
-    const daysSinceLastMealNotification = daysFromSeconds(game.time.worldTime - lastMealNotificationAt);
-  
-    // Check if at least one day has passed since the last notification.
-    if (daysSinceLastMealNotification >= 1) {
+      const lastMealNotificationAt = actor.getFlag('fit', 'lastMealNotificationAt') || 0;
+      const daysSinceLastMealNotification = daysFromSeconds(game.time.worldTime - lastMealNotificationAt);
       const daysHungry = daysHungryForActor(actor);
-
-      // Notify the players via chat about the actor's hunger status.
-      const chatContent = await sendHungerNotification(actor); // This helper function was added to build and return the chat message content, including hunger status and rations information.
+    
+          // ✅ Always update the last notification time when hunger increases
+      await actor.setFlag('fit', 'lastMealNotificationAt', game.time.worldTime);
+    
+      // ✅ Notify players if hunger has increased and at least one day has passed
+      if (daysSinceLastMealNotification >= 1) {
+    
+        // Notify players about hunger
+        const chatContent = await sendHungerNotification(actor);
         hungerChatMessage(chatContent, actor);
-      
-      // Apply or update hunger effects if the actor is hungry.
-      if (daysHungry >= 1) { // ✅ Apply effects for ANY hunger, not just <= 5
-
-        if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "hungerEffect")) return; // ✅ Stops additional hunger effects if disabled
-        await removeHungerEffects(actor); // ✅ Ensure old effect is removed before applying a new one
+      } else {
+      }
+    
+      // ✅ Apply or update hunger effects if the actor is hungry.
+      if (daysHungry >= 1) {
+        if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "hungerEffect")) return;
+        await removeHungerEffects(actor);
         const config = activeEffectConfig(actor, daysHungry);
         await addOrUpdateHungerEffect(actor, config);
-      } 
-      
-      // ✅ Ensure effects do NOT get removed at daysHungry > 5
-      if (daysHungry > 5) {
-        if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "hungerEffect")) return; // ✅ Stops additional hunger effects if disabled
-        
       }
-   
-
-      // Update the flag to track the last notification time.
-      await actor.setFlag('fit', 'lastMealNotificationAt', game.time.worldTime);
+    
       Hooks.call('evaluateHunger', actor);
     }
-  }
+  
     // Helper function to configure active effects based on hunger.
     export function activeEffectConfig(actor, daysHungry) {
       if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "hungerEffect")) return; // ✅ Stops additional hunger effects if disabled
@@ -131,16 +126,25 @@ Hooks.once('ready', () => {
     };
 
 
-Hooks.on('updateRestEffect', async (actor) => {
-  if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "restTracking")) return;
+    Hooks.on('updateExhaustionEffect', async (actor) => {
+      if (!game.settings.get("fit", "enabled")) return;
+  
+ 
+      updateExhaustion(actor);
+  
+      // ✅ Only refresh the UI if the sheet is already open
+      if (actor.sheet?.rendered) {
+          actor.sheet.render(true);
+      } else {
+      }
 
-  // ✅ Update exhaustion based on highest of rest and hunger
-  updateExhaustion(actor);
-
-  if (actor.sheet) {
-      actor.sheet.render();
-  }
+          // ✅ Refresh the Hunger Table if it's open
+    const hungerTable = game.modules.get("fit")?.api?.hungerTable;
+    if (hungerTable?.rendered) {
+        hungerTable.render(true);
+    }
 });
+    
 
 /*==================================================
 RESET REST AFTER LONG REST
@@ -180,11 +184,15 @@ CONSUME FOOD
           
     // ✅ Now calls `consumeFood()` from hunger.js inside dnd5e.js
        await consumeFood(actor);
+    // ✅ Refresh the Hunger Table if it's open
+    const hungerTable = game.modules.get("fit")?.api?.hungerTable;
+    if (hungerTable?.rendered) {
+        console.log("🔄 Refreshing Hunger Table after consuming food");
+        hungerTable.render(true);
+    }
           }
         }
       });
-      
-
 
 
 

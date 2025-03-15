@@ -1,4 +1,4 @@
-import { hungerLevel, daysHungryForActor, lastMealAt, secondsSinceLastMeal } from "./hunger.js";
+import { hungerLevel, daysHungryForActor, lastMealAt } from "./hunger.js";
 
 let hungerTable;
 
@@ -43,7 +43,7 @@ export default class HungerTable extends Application {
       return {
         name: actor.name,
         lastMealAt: this.formatDate(lastMealAt(actor)), // ✅ Fetches last meal time from `hunger.js`
-        hoursSinceLastMeal: this.formatHours(secondsSinceLastMeal(actor)), // ✅ Fetches elapsed time
+        hoursSinceLastMeal: this.formatHours(game.time.worldTime - lastMealAt(actor)), // ✅ Fetches elapsed time
         daysHungry: daysHungryForActor(actor), // ✅ Fetches hunger duration
         hunger: hungerLevel(actor) // ✅ Fetches hunger level description
       };
