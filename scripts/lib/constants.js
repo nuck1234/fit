@@ -36,6 +36,39 @@ const HUNGER_ICONS = [
 const DEFAULT_HUNGER_LEVEL = 0;// changed to zero
 
 /* =========================
+   Thirst Levels and Icons
+   ========================= */
+
+// List of hunger levels, from the most extreme ("starving") to the least ("stuffed").
+const THIRST_LEVEL = [
+  "Fully Hydrated",         // Level 0 (default state, rested)
+  "Parched",               // Level 1
+  "Dehydrated",            // Level 2
+  "Desperate for Water",   // Level 3
+  "Severely Dehydrated",    // Level 4
+  "Critically Dehydrated",  // Level 5
+  "Dying of Thirst"         // Level 6 (final rest state)
+];
+
+// Paths to icons representing each hunger level, mapped by index to the HUNGER_LEVELS array.
+// Icons are stored in the "fit/templates/icons" directory within the module.
+const THIRST_ICONS = [
+  'modules/fit/templates/icons/level_0.png', // Fully Hydrated
+  'modules/fit/templates/icons/level_1.png', // Parched
+  'modules/fit/templates/icons/level_2.png', // Dehydrated
+  'modules/fit/templates/icons/level_3.png', // Desperate for Water
+  'modules/fit/templates/icons/level_4.png', // Severely Dehydrated
+  'modules/fit/templates/icons/level_5.png', // Critically Dehydrated
+  'modules/fit/templates/icons/level_6.png', // Dying of Thirst
+];
+
+// Default hunger level for a character when no hunger effects are applied ("satisfied").
+const DEFAULT_THIRST_LEVEL = 0;// changed to zero
+
+
+
+
+/* =========================
    Rest Levels and Icons
    ========================= */
 
@@ -97,8 +130,11 @@ DEFAULT_HUNGER_LEVEL,  // Default starting hunger level
 REST_LEVEL,      // Array of rest levels
 REST_ICONS,         // Array of rest icons
 DEFAULT_REST_LEVEL, // Default starting rest level
+THIRST_LEVEL,         // Array of thirst levels
+THIRST_ICONS,          // Array of thirst icons
+DEFAULT_THIRST_LEVEL,  // Default starting thirst level
 SECONDS,               // Unit of time: 1 second (SECONDS)ß
 MINUTE,                // Unit of time: 1 minute (MINUTE)
 HOUR,                  // Unit of time: 1 hour (HOUR)
-DAY                    // Unit of time: 1 day (DAY)
+DAY                                    // Unit of time: 1 day (DAY)
 }

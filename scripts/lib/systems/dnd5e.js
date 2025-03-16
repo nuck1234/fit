@@ -6,7 +6,7 @@ import { daysFromSeconds } from "../time.js"; // Utility functions to calculate 
 import { hungerChatMessage, sendHungerNotification } from "../chat.js"; // Function to send hunger notifications to the chat.
 import { hungerLevel, hungerIcon, addOrUpdateHungerEffect, removeHungerEffects, daysHungryForActor, consumeFood,hungerIndex } from "../hunger.js"; // Functions and utilities for managing hunger levels and effects.
 import { resetRestAfterRest, restIndex, restLevel, } from "../rested.js"; // Function to set the last rest timestamp for an actor.
-
+import { consumeWater, thirstLevel,thirstIndex } from "../thirst.js"; // Function to set the last rest timestamp for an actor.
   
 /* =======================
  Mechanics
@@ -20,6 +20,7 @@ function updateCharacterSheet(app, html, sheet) {
   if (!game.settings.get("fit", "enabled")) return;
 
   const trackHunger = game.settings.get("fit", "hungerTracking");
+  const trackThirst = game.settings.get("fit", "thirstTracking");
   const trackRest = game.settings.get("fit", "restTracking");
 
   const el = $(html).find('.counters');
@@ -41,7 +42,10 @@ function updateCharacterSheet(app, html, sheet) {
   if (trackHunger) {
       el.append(`<div class='counter flexrow hunger'><h4>Hunger</h4><div class='counter-value'>${hungerLevel(actor)}</div></div>`);
   }
-
+  // ✅ If Thirst Tracking is enabled, display it
+  if (trackThirst) {
+    el.append(`<div class='counter flexrow thirst'><h4>Thirst</h4><div class='counter-value'>${thirstLevel(actor)}</div></div>`);
+}
   // ✅ If Rest Tracking is enabled, display it
   if (trackRest) {
       el.append(`<div class='counter flexrow rest'><h4>Rest</h4><div class='counter-value'>${restLevel(actor)}</div></div>`);
@@ -118,9 +122,11 @@ Hooks.once('ready', () => {
 
         const trackRest = game.settings.get("fit", "restTracking");
         const trackHunger = game.settings.get("fit", "hungerTracking");
+        const trackThirst = game.settings.get("fit", "thirstTracking");
         const rest = trackRest ? restIndex(actor) : 0;
         const hunger = trackHunger ? hungerIndex(actor) : 0;
-        const highestLevel = Math.max(rest, hunger);
+        const thirst = trackThirst ? thirstIndex(actor) : 0;
+        const highestLevel = Math.max(rest, hunger, thirst);
         
         actor.update({ "system.attributes.exhaustion": highestLevel });
     };
@@ -193,6 +199,36 @@ CONSUME FOOD
           }
         }
       });
+
+/*==================================================
+CONSUME Drink
+===================================================*/  
+  //Consume drink from inventory
+  Hooks.on('preUpdateItem', async (item, change) => {
+    if (change.hasOwnProperty('sort')) return; // Ignore reordering
+     
+    // Check if the item's name matches the configured ration name
+    if (game.settings.get('fit', 'waterName') === item.name) {
+      const actor = game.actors.get(item.actor.id);
+   
+      if (!actor) {
+      console.error("Actor not found for item:", item);
+    return;
+      }
+   
+    // Determine if the item was consumed based on its uses or quantity
+       const consumedUses = item.system.uses?.value !== undefined && change.system.uses?.value === item.system.uses.value - 1;
+       const consumedQuantity = item.system.quantity !== undefined && change.system.quantity === item.system.quantity - 1;
+      
+       if (consumedUses || consumedQuantity) {
+          
+    // ✅ Now calls `consumeWater()` from thirst.js inside dnd5e.js
+       await consumeWater(actor);
+   
+          }
+        }
+      });
+      
 
 
 

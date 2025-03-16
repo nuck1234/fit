@@ -20,6 +20,16 @@ const registerSettings = async () => {
     requiresReload: true
 })
 
+await game.settings.register("fit", "thirstTracking", {
+  name: "Enable Thirst Tracking",
+  hint: "If enabled, thisrt tracking will be active. Uncheck to disable thirst tracking.",
+  scope: "world",
+  config: true,
+  type: Boolean,
+  default: true, // Default: Thirst tracking ON when checked
+  requiresReload: true
+})
+
 
 
 await game.settings.register("fit", "restTracking", {
@@ -61,7 +71,7 @@ await game.settings.register('fit', 'baseTolerance', {
   scope: "world", // This ensures all players use the same value.
   config: true, // This makes it visible in the settings UI.
   type: Number, // The setting must be a number.
-  default: 1, // Default value is 3 days, per D&D 5e rules.
+  default: 0, // Default value is 3 days, per D&D 5e rules.
   requiresReload: true
 });
 
@@ -71,7 +81,17 @@ await game.settings.register("fit", "baseRest", {
   scope: "world",
   config: true,
   type: Number,
-  default: 1, // Default value (adjustable)
+  default: 0, // Default value (adjustable)
+  requiresReload: true
+});
+
+await game.settings.register("fit", "baseThirst", {
+  name: "Base Thirst Tolerance", // ✅ New Setting
+  hint: "The base number of days a character can go without a drink before suffering exhaustion.",
+  scope: "world",
+  config: true,
+  type: Number,
+  default: 0, // Default value (adjustable)
   requiresReload: true
 });
 
@@ -104,6 +124,17 @@ await game.settings.register("fit", "baseRest", {
     config: true,
     type: String,
     default: "Rations",
+
+  })
+
+  // Register the name of the item to be treated as Water in the system.
+  await game.settings.register('fit', 'waterName', {
+    name: "Water Name",
+    hint: "Use this item name for Water",
+    scope: "world",
+    config: true,
+    type: String,
+    default: "Waterskin",
   })
 }
 

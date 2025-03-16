@@ -1,43 +1,44 @@
-/* This script integrates thirst tracking into the D&D 5e system within the Time-2-Eat module.
+// This script includes logic to track thirst, reset it after a long thirst, and log relevant data.
 
 import { DEFAULT_THIRST_LEVEL, THIRST_LEVEL, } from './constants.js';// Ensure thirst icons are imported for consistency
 import { daysFromSeconds } from "./time.js"; // Utility functions to calculate time differences.
-import { updateExhaustion } from "./systems/dnd5e.js";
 
 
 /*-------------------------------------------------
 Helper function to calculate daysSinceLastDrinkForActor
-----------------------------------------------------
+----------------------------------------------------*/
 export const daysSinceLastDrinkForActor = (actor) => {
+  if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "thirstTracking")) return; // ✅ Stops thirst if disabled
+
+  const baseThirst = game.settings.get('fit', 'baseThirst') || 0;
   const tokenInScene = game.scenes.active?.tokens.some(token => token.actorId === actor.id);
 
   let elapsedTime;
   if (!tokenInScene) {
-    // ✅ Use frozen thirst time instead of live calculation
+    // ✅ If PC is off-canvas, use the frozen rest time
     elapsedTime = actor.getFlag('fit', 'thirstElapsedTime') || 0;
-    console.log(`🛑 Using frozen thirst time for ${actor.name}:`, elapsedTime);
+    
   } else {
-    // ✅ Normal calculation for on-scene PCs
+    // ✅ If PC is on-canvas, calculate thirst normally
     const lastDrinkAt = actor.getFlag('fit', 'lastDrinkAt') || game.time.worldTime;
-    elapsedTime = game.time.worldTime - lastDrinktAt;
+    elapsedTime = game.time.worldTime - lastDrinkAt;
   }
 
   let daysSinceLastDrink = daysFromSeconds(elapsedTime);
   
   
-  // ✅ Cap the max days without a drink at 6 (to align with thirst limit)
+
+
+  // ✅ Cap the max days without thirst at 6 (to align with thirst limit)
   // ✅ Adjust the cap dynamically to include baseThirst
-  const baseThirst = game.settings.get('fit', 'baseThirst') || 0; // ✅ Get base thirst tolerance
   const maxDaysWithoutDrink = 6 + baseThirst; 
   daysSinceLastDrink = Math.min(maxDaysWithoutDrink, daysSinceLastDrink); 
 
-  console.log(`🛑 Days Without Drink for ${actor.name}:`, daysSinceLastDrink);
-
-  return Math.max(daysSinceLastDrink - baseThirst, 0);
+  return Math.max(daysSinceLastDrink, 0);
 };
-/*-------------------------------------------------------------------------
+/*--------------------------------------------------------------------
  Function to calculate the thirstIndex based on daysSinceLastDrinkForActor.
- --------------------------------------------------------------------------
+ -------------------------------------------------------------------*/
 export const thirstIndex = (actor) => {
   if (!actor || typeof actor !== "object") {
     return 0;
@@ -47,25 +48,27 @@ export const thirstIndex = (actor) => {
 };
 
 /*--------------------------------------------------------------------
- Function to calculate the thirstLevel (in words) based on thirstIndex.
- ---------------------------------------------------------------------
+ Function to calculate the thisrtLevel (in words) based on thirstIndex.
+ ---------------------------------------------------------------------*/
 export const thirstLevel = (actor) => {
-  return THIRST_LEVEL[thirstIndex(actor)] || "unknown";
+  const level = THIRST_LEVEL[thirstIndex(actor)] || "unknown";
+  return game.i18n.localize(`${level}`); // ✅ Now localized
 };
 
-
-
-// Function to be used for thirst tracking
+/*--------------------------------------------------------------------
+  Function to be used for thirst tracking
+---------------------------------------------------------------------*/
 export const trackThirst = async (actor) => {
   const tokenInScene = game.scenes.active?.tokens.some(token => token.actorId === actor.id);
 
-  if (!tokenInScene) {
-      if (actor.getFlag('fit', 'thirstElapsedTime')) return; // ✅ Prevent multiple saves
+  // ✅ Step 1: Check if the token is in the scene
 
-      // ✅ Capture the frozen thirst state
+  if (!tokenInScene) {
+    // ✅ Step 2: Check if thirst is already frozen
+      if (actor.getFlag('fit', 'thirstElapsedTime')) return; // ✅ Prevent multiple saves
       const thirstLevel = actor.getFlag('fit', 'thirstLevel') || 0;
       await actor.setFlag('fit', 'thirstElapsedTime', thirstLevel);
-      return; // ✅ Stop thirst updates off-canvas
+      return;
   }
 
   // ✅ If the PC is back on canvas, restore thirst
@@ -75,31 +78,33 @@ export const trackThirst = async (actor) => {
       await actor.unsetFlag('fit', 'thirstElapsedTime');
   }
 
-  const baseThirst = game.settings.get('fit', 'baseThirst'); // ✅ Get base thirst tolerance from settings
+  const baseThirst = game.settings.get('fit', 'baseThirst');
   const daysWithoutDrink = daysSinceLastDrinkForActor(actor);
-  
-  let thirstLevel = Math.max(0, Math.floor((daysWithoutDrink - baseThirst) / 1)); // ✅ Apply base thirst before thirst starts
 
-  // 🔄 Update the actor’s thirst directly
-  await actor.update({ "system.attributes.exhaustion": thirstLevel });
+  let thirstLevel = Math.max(0, Math.floor(daysWithoutDrink - baseThirst)); // ✅ Apply base thirst
 
-  // 🔄 Trigger the Hook to update UI
-  Hooks.call('updateThirstEffect', actor, thirstLevel);
+  // ✅ Store thirst level as a flag
+  await actor.setFlag("fit", "thirstLevel", thirstLevel);
+
+  // ✅ Call the exhaustion update in dnd5e.js instead
+  Hooks.call('updateExhaustionEffect', actor, thirstLevel);
 };
 
-
-
-// Function to update the last drink time for an actor
+/*-----------------------------------------------
+  Function to update the last drink time for an actor
+------------------------------------------------*/
 export const setLastDrinkTime = async (actor) => {
   if (!actor) {
     return;
   }
   const now = game.time.worldTime;
- // console.log(`🛠 Debug: ${actor.name} - Last drink time updating to: ${now}`);
+
   await actor.setFlag('fit', 'lastDrinkAt', now);
 };
 
-// Ensure API functions are registered under fit module
+/*-------------------------------------------------
+Ensure API functions are registered under fit module
+---------------------------------------------------*/
 Hooks.once("ready", () => {
   const fitModule = game.modules.get("fit");
   if (fitModule) {
@@ -107,18 +112,30 @@ Hooks.once("ready", () => {
     Object.assign(fitModule.api, {
       resetThirstAfterDrink: resetThirstAfterDrink // ✅ Calls function directly
     });
-  //  console.log("🛠 Debug: fit module API functions exposed for debugging");
   }
 });
+
+/*--------------------------------------------------------------------
+ Function to reset drink after consuming water
+ ---------------------------------------------------------------------*/
 export async function resetThirstAfterDrink(actor) {
   if (!actor) return;
-  
- // ✅ Recalculate exhaustion properly after resetting thirst
-  updateExhaustion(actor);
-  await setLastDrinkTime(actor); // Reset the last thirst time.
 
- 
+  await setLastDrinkTime(actor); // ✅ Reset last drink time only
 
-  console.log(`🛠 ${actor.name} | Drink reset, exhaustion recalculated.`);
+  // ✅ Instead of updating exhaustion, call the Hook so dnd5e.js handles it
+  Hooks.call("updateExhaustionEffect", actor);
+
 }
-*/
+
+/*--------------------------------------------------------------------
+ Function to consume water (Reset thirst & effects)
+ ---------------------------------------------------------------------*/
+export const consumeWater = async (actor) => {
+  await resetThirstAfterDrink(actor); // ✅ Now matches rest
+
+  Hooks.call('consumeWater', actor);
+
+    // ✅ Ensure exhaustion recalculates after eating
+    updateExhaustion(actor);
+};

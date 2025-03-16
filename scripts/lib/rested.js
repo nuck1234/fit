@@ -1,9 +1,7 @@
-// This script integrates rest tracking into the D&D 5e system within the Time-2-Eat module.
-// It includes logic to track rest, reset it after a long rest, and log relevant data.
+// This script includes logic to track rest, reset it after a long rest, and log relevant data.
 
 import { DEFAULT_REST_LEVEL, REST_LEVEL, } from './constants.js';// Ensure rest icons are imported for consistency
 import { daysFromSeconds } from "./time.js"; // Utility functions to calculate time differences.
-import { updateExhaustion } from "./systems/dnd5e.js";
 
 
 /*-------------------------------------------------
@@ -17,11 +15,11 @@ export const daysSinceLastRestForActor = (actor) => {
 
   let elapsedTime;
   if (!tokenInScene) {
-    // ✅ If PC is off-canvas, use the frozen hunger time
+    // ✅ If PC is off-canvas, use the frozen rest time
     elapsedTime = actor.getFlag('fit', 'restElapsedTime') || 0;
     
   } else {
-    // ✅ If PC is on-canvas, calculate hunger normally
+    // ✅ If PC is on-canvas, calculate rest normally
     const lastRestAt = actor.getFlag('fit', 'lastRestAt') || game.time.worldTime;
     elapsedTime = game.time.worldTime - lastRestAt;
   }
@@ -54,7 +52,7 @@ export const restIndex = (actor) => {
  ---------------------------------------------------------------------*/
 export const restLevel = (actor) => {
   const level = REST_LEVEL[restIndex(actor)] || "unknown";
-  return game.i18n.localize(`${level}`); // ✅ Now localized like hungerLevel()
+  return game.i18n.localize(`${level}`); // ✅ Now localized
 };
 
 /*--------------------------------------------------------------------
@@ -66,7 +64,7 @@ export const trackRest = async (actor) => {
   // ✅ Step 1: Check if the token is in the scene
 
   if (!tokenInScene) {
-    // ✅ Step 2: Check if hunger is already frozen
+    // ✅ Step 2: Check if rest is already frozen
       if (actor.getFlag('fit', 'restElapsedTime')) return; // ✅ Prevent multiple saves
       const restLevel = actor.getFlag('fit', 'restLevel') || 0;
       await actor.setFlag('fit', 'restElapsedTime', restLevel);
@@ -118,7 +116,7 @@ Hooks.once("ready", () => {
 });
 
 /*--------------------------------------------------------------------
- Function to reset hunger after consuming food
+ Function to reset rest after consuming food
  ---------------------------------------------------------------------*/
 export async function resetRestAfterRest(actor) {
   if (!actor) return;

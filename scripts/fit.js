@@ -1,9 +1,10 @@
 // Import necessary modules and constants
 import registerSettings from "./lib/settings.js";
-import { trackHunger } from "./lib/hunger.js";
-import { preloadTemplates } from './lib/preloadTemplates.js';
+import { preloadTemplates } from "./lib/preloadTemplates.js";
 import HungerTable from './lib/hunger-table.js';
-import { evaluateHunger } from './lib/systems/dnd5e.js';
+import { evaluateHunger } from "./lib/systems/dnd5e.js";
+import { trackHunger } from "./lib/hunger.js";
+import { trackThirst } from "./lib/thirst.js";
 import { trackRest } from "./lib/rested.js";
 
 /*-------------------------------------------------
@@ -32,7 +33,7 @@ Hooks.once("ready", () => {
   }
 });
 /*-------------------------------------------------
-Handle World Time Updates (Tracks Hunger & Rest)
+Handle World Time Updates (Tracks Hunger Thirst & Rest)
 ---------------------------------------------------*/
 async function handleWorldTimeUpdate(seconds, elapsed) {
   if (!game.settings.get("fit", "enabled")) return;
@@ -53,6 +54,10 @@ async function handleWorldTimeUpdate(seconds, elapsed) {
     if (game.settings.get("fit", "hungerTracking")) {
       await trackHunger(actor);
     }
+
+    if (game.settings.get("fit", "thirstTracking")) {
+      await trackThirst(actor);
+    }  
 
     if (game.settings.get("fit", "restTracking")) {
       trackRest(actor);
@@ -81,10 +86,11 @@ Hooks.on("createActor", async (actor) => {
   if (!game.settings.get("fit", "enabled")) return;
   if (actor.type !== "character") return; // ✅ Only apply to player characters
 
-  console.log(`✅ New character created: ${actor.name} - Initializing Hunger & Rest`);
+  console.log(`✅ New character created: ${actor.name} - Initializing Hunger Thirst & Rest`);
 
   // ✅ Set up hunger and rest when the actor is first created
-  await initializeHunger(actor);
+  await trackHunger(actor);
+  await trackThirst(actor);
   await trackRest(actor);
 
   // ✅ Ensure exhaustion updates immediately
@@ -114,6 +120,18 @@ Token Event Handler
           await trackHunger(actor);
       }
 
+      // ✅ Restore stored thirst state
+      if (game.settings.get("fit", "thirstTracking")) {
+        const elapsedHungerTime = actor.getFlag('fit', 'thirstElapsedTime') || 0;
+        await actor.setFlag('fit', 'lastDrinkAt', currentTime - elapsedHungerTime);
+        await actor.unsetFlag('fit', 'thirstElapsedTime');
+
+        console.log(`${actor.name} - 🍽️ Restored lastDrinkAt to: ${currentTime - elapsedThirstTime}`);
+
+        // ✅ Apply tracking function to ensure thirst updates
+        await trackThirst(actor);
+    }
+
       // ✅ Restore stored rest state
       if (game.settings.get("fit", "restTracking")) {
           const elapsedRestTime = actor.getFlag('fit', 'restElapsedTime') || 0;
@@ -126,8 +144,6 @@ Token Event Handler
           await trackRest(actor);
       }
 
-      // ✅ Ensure exhaustion updates immediately
-     // updateExhaustion(actor);
     });
   
  /*-------------------------------------------------
@@ -149,6 +165,15 @@ Hooks.on('preDeleteToken', async (document) => {
     console.log(`${actor.name} - 🍽️ Stored hunger elapsed time: ${elapsedHungerTime} seconds`);
   }
 
+  // ✅ Store elapsed thirst time (same logic as rest)
+  if (game.settings.get("fit", "thirstTracking")) {
+    const lastDrinkAt = actor.getFlag('fit', 'lastDrinkAt') || currentTime;
+    const elapsedThirstTime = currentTime - lastDrinklAt;
+    await actor.setFlag('fit', 'thirstElapsedTime', elapsedThirstTime);
+    
+    console.log(`${actor.name} - 🍽️ Stored thirst elapsed time: ${elapsedThirstTime} seconds`);
+  }  
+
   // ✅ Store elapsed rest time
   if (game.settings.get("fit", "restTracking")) {
     const lastRestAt = actor.getFlag('fit', 'lastRestAt') || currentTime;
@@ -163,7 +188,7 @@ Hooks.on('preDeleteToken', async (document) => {
     let _sessionTime = 0;
     const EVAL_FREQUENCY = 30;
     
-    // Hook to evaluate hunger and rest periodically
+    // Hook to evaluate hunger, thirst and rest periodically
     Hooks.on('updateWorldTime', async (seconds, elapsed) => {
       if (!game.settings.get("fit", "enabled")) return;
     
@@ -191,7 +216,10 @@ Hooks.on('preDeleteToken', async (document) => {
         // ✅ Required to send a chat message when hunger is increased.
           await evaluateHunger(actor);
         }
-    
+
+        if (game.settings.get("fit", "thirstTracking")) {
+          trackRest(actor);
+        }        
         if (game.settings.get("fit", "restTracking")) {
           trackRest(actor);
         }

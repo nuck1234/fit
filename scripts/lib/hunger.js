@@ -1,7 +1,6 @@
 // Import necessary constants from the constants.js file
 import { DEFAULT_HUNGER_LEVEL, HUNGER_LEVELS, HUNGER_ICONS } from './constants.js'
 import { daysFromSeconds } from './time.js';
-import { localize } from './utils.js';
 import { updateExhaustion } from "./systems/dnd5e.js";
 
 

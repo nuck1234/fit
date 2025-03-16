@@ -13,7 +13,9 @@
     "scripts/fit.js",
     "scripts/lib/systems/dnd5e.js",
     "scripts/lib/rested.js",
+    "scripts/lib/thirst.js",
     "scripts/lib/hunger.js"
+
 
   ],
   "styles": [
