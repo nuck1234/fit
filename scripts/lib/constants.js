@@ -10,12 +10,12 @@
 const HUNGER_LEVELS = [
   //"Stuffed",    // Level 0 (most well-fed) future implementation
   //"Full",       // Level 1 future implementation
-  "Satisfied",  // Level 2 (default state)
+  "Fully Satisfied",  // Level 2 (default state)
   "Peckish",    // Level 3
   "Hungry",     // Level 4
-  "Ravenous",   // Level 5
-  "Famished",   // Level 6
-  "Starving",    // Level 7 (worst state)
+  "Desperate for Food",   // Level 5
+  "Severely Hungry",   // Level 6
+  "Critically Hungry",    // Level 7 (worst state)
   "Unconscious" // Level 8 (final hunger state)
 ];
 
@@ -47,7 +47,7 @@ const THIRST_LEVEL = [
   "Desperate for Water",   // Level 3
   "Severely Dehydrated",    // Level 4
   "Critically Dehydrated",  // Level 5
-  "Dying of Thirst"         // Level 6 (final rest state)
+  "Unconscious"         // Level 6 (final rest state)
 ];
 
 // Paths to icons representing each hunger level, mapped by index to the HUNGER_LEVELS array.
@@ -77,9 +77,9 @@ const DEFAULT_THIRST_LEVEL = 0;// changed to zero
     "Fully Rested",               // Level 0 (default state, rested)
     "Weary",  // Level 1
     "Fatigued",               // Level 2
-    "Struggling", // Level 3
-    "Worn Out	",   // Level 4
-    "Collapsed",         // Level 5
+    "Desperate for Sleep", // Level 3
+    "Severely Tired	",   // Level 4
+    "Critically Tired",         // Level 5
     "Unconscious"                       // Level 6 (final rest state)
 
 ];

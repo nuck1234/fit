@@ -5,8 +5,8 @@
 import { daysFromSeconds } from "../time.js"; // Utility functions to calculate time differences.
 import { hungerChatMessage, sendHungerNotification } from "../chat.js"; // Function to send hunger notifications to the chat.
 import { hungerLevel, hungerIcon, addOrUpdateHungerEffect, removeHungerEffects, daysHungryForActor, consumeFood,hungerIndex } from "../hunger.js"; // Functions and utilities for managing hunger levels and effects.
-import { resetRestAfterRest, restIndex, restLevel, } from "../rested.js"; // Function to set the last rest timestamp for an actor.
-import { consumeWater, thirstLevel,thirstIndex } from "../thirst.js"; // Function to set the last rest timestamp for an actor.
+import { resetRestAfterRest, restIndex, restLevel,daysSinceLastRestForActor } from "../rested.js"; // Function to set the last rest timestamp for an actor.
+import { consumeWater, thirstLevel,daysSinceLastDrinkForActor,thirstIndex } from "../thirst.js"; // Function to set the last rest timestamp for an actor.
   
 /* =======================
  Mechanics
@@ -65,37 +65,84 @@ Hooks.once('ready', () => {
     
 
     /*-------------------------------------------------
-    HUNGER EFFECTS
+    EFFECTS
     ---------------------------------------------------*/
+// ✅ Main function to evaluate and update an actor's hunger & thirst status.
+export async function evaluateNeeds(actor) {
+  const hungerEnabled = game.settings.get("fit", "hungerTracking");
+  const thirstEnabled = game.settings.get("fit", "thirstTracking");
+  const restEnabled = game.settings.get("fit", "restTracking");
 
-    // Main function to evaluate and update an actor's hunger status.
-    export async function evaluateHunger(actor) {
+  if (!hungerEnabled && !thirstEnabled && !restEnabled) return; // ✅ Stops if all tracking is disabled
+
+  const currentTime = game.time.worldTime;
+  let shouldSendNotification = false;
+  let chatContent = ``;
+
+  // ✅ Evaluate Hunger
+  if (hungerEnabled) {
       const lastMealNotificationAt = actor.getFlag('fit', 'lastMealNotificationAt') || 0;
-      const daysSinceLastMealNotification = daysFromSeconds(game.time.worldTime - lastMealNotificationAt);
+      const daysSinceLastMealNotification = daysFromSeconds(currentTime - lastMealNotificationAt);
       const daysHungry = daysHungryForActor(actor);
-    
-          // ✅ Always update the last notification time when hunger increases
-      await actor.setFlag('fit', 'lastMealNotificationAt', game.time.worldTime);
-    
-      // ✅ Notify players if hunger has increased and at least one day has passed
+
+      await actor.setFlag('fit', 'lastMealNotificationAt', currentTime);
+
       if (daysSinceLastMealNotification >= 1) {
-    
-        // Notify players about hunger
-        const chatContent = await sendHungerNotification(actor);
-        hungerChatMessage(chatContent, actor);
-      } else {
+          console.log(`${actor.name} - ✅ Sending hunger notification!`);
+          const hungerMessage = await sendHungerNotification(actor);
+          if (hungerMessage) {
+              chatContent += hungerMessage;
+              shouldSendNotification = true;
+          }
       }
-    
-      // ✅ Apply or update hunger effects if the actor is hungry.
-      if (daysHungry >= 1) {
-        if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "hungerEffect")) return;
-        await removeHungerEffects(actor);
-        const config = activeEffectConfig(actor, daysHungry);
-        await addOrUpdateHungerEffect(actor, config);
+
+      // ✅ Apply Hunger Effects (No Thirst Effects Exist)
+      if (daysHungry >= 1 && game.settings.get("fit", "hungerEffect")) {
+          await removeHungerEffects(actor);
+          const config = activeEffectConfig(actor, daysHungry);
+          await addOrUpdateHungerEffect(actor, config);
       }
-    
-      Hooks.call('evaluateHunger', actor);
+  }
+
+  // ✅ Evaluate Thirst (NO EFFECTS, Only Chat Updates)
+  if (thirstEnabled) {
+      const lastDrinkNotificationAt = actor.getFlag('fit', 'lastDrinkNotificationAt') || 0;
+      const daysSinceLastDrinkNotification = daysFromSeconds(currentTime - lastDrinkNotificationAt);
+      const daysThirsty = daysSinceLastDrinkForActor(actor);
+
+      
+      if (daysSinceLastDrinkNotification >= 1) {
+          console.log(`${actor.name} - ✅ Sending thirst notification!`);
+          const thirstMessage = await sendHungerNotification(actor); // ✅ Uses same function
+          if (thirstMessage) {
+              chatContent += thirstMessage;
+              shouldSendNotification = true;
+          }
+          await actor.setFlag('fit', 'lastDrinkNotificationAt', currentTime);
+      }
+  }
+  // ✅ Evaluate rest (NO EFFECTS, Only Chat Updates)
+  if (restEnabled) {
+    console.log(`${actor.name} - 🔄 Checking Rest`);
+    const lastRestNotificationAt = actor.getFlag('fit', 'lastRestNotificationAt') || 0;
+    const daysSinceLastRestNotification = daysFromSeconds(currentTime - lastRestNotificationAt);
+    if (daysSinceLastRestNotification >= 1) {
+        console.log(`${actor.name} - ✅ Sending rest notification!`);
+        chatContent += await sendHungerNotification(actor);
+        shouldSendNotification = true;
     }
+    await actor.setFlag('fit', 'lastRestNotificationAt', currentTime);
+}
+
+
+  // ✅ Send Chat Message if Needed
+  if (shouldSendNotification) {
+      console.log(`${actor.name} - ✅ Sending chat message`);
+      hungerChatMessage(chatContent, actor);
+  }
+
+  Hooks.call('evaluateNeeds', actor);
+}
   
     // Helper function to configure active effects based on hunger.
     export function activeEffectConfig(actor, daysHungry) {
@@ -120,12 +167,12 @@ Hooks.once('ready', () => {
     export const updateExhaustion = (actor) => {
         if (!game.settings.get("fit", "enabled")) return;
 
-        const trackRest = game.settings.get("fit", "restTracking");
         const trackHunger = game.settings.get("fit", "hungerTracking");
         const trackThirst = game.settings.get("fit", "thirstTracking");
-        const rest = trackRest ? restIndex(actor) : 0;
+        const trackRest = game.settings.get("fit", "restTracking");
         const hunger = trackHunger ? hungerIndex(actor) : 0;
         const thirst = trackThirst ? thirstIndex(actor) : 0;
+        const rest = trackRest ? restIndex(actor) : 0;
         const highestLevel = Math.max(rest, hunger, thirst);
         
         actor.update({ "system.attributes.exhaustion": highestLevel });

@@ -5,6 +5,19 @@ import { daysFromSeconds } from "./time.js"; // Utility functions to calculate t
 
 
 /*-------------------------------------------------
+Initialize Rest Tracking
+---------------------------------------------------*/
+export const initializeRest = async (actor) => {
+  const now = game.time.worldTime;
+  await Promise.all([
+    actor.setFlag('fit', 'lastRestAt', now),
+    actor.setFlag('fit', 'restElapsedTime', 0),
+    actor.setFlag('fit', 'lastRestNotificationAt', now) // ✅ Added for Thirst Tracking
+  ]);
+  Hooks.call('initializeRest', actor);
+};
+
+/*-------------------------------------------------
 Helper function to calculate daysSinceLastRestForActor
 ----------------------------------------------------*/
 export const daysSinceLastRestForActor = (actor) => {

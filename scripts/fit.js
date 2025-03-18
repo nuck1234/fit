@@ -2,10 +2,10 @@
 import registerSettings from "./lib/settings.js";
 import { preloadTemplates } from "./lib/preloadTemplates.js";
 import HungerTable from './lib/hunger-table.js';
-import { evaluateHunger } from "./lib/systems/dnd5e.js";
-import { trackHunger } from "./lib/hunger.js";
-import { trackThirst } from "./lib/thirst.js";
-import { trackRest } from "./lib/rested.js";
+import { evaluateNeeds } from "./lib/systems/dnd5e.js";
+import { trackHunger, initializeHunger } from "./lib/hunger.js";
+import { trackThirst, initializeThirst } from "./lib/thirst.js";
+import { trackRest, initializeRest } from "./lib/rested.js";
 
 /*-------------------------------------------------
 Module Initialization
@@ -89,11 +89,11 @@ Hooks.on("createActor", async (actor) => {
   console.log(`✅ New character created: ${actor.name} - Initializing Hunger Thirst & Rest`);
 
   // ✅ Set up hunger and rest when the actor is first created
-  await trackHunger(actor);
-  await trackThirst(actor);
-  await trackRest(actor);
+  await initializeHunger(actor);
+  await initializeThirst(actor);
+  await initializeRest(actor);
 
-  // ✅ Ensure exhaustion updates immediately
+  await trackRest(actor);  // ✅ Keeps Rest Tracking Working
   updateExhaustion(actor);
 });
 
@@ -189,42 +189,48 @@ Hooks.on('preDeleteToken', async (document) => {
     const EVAL_FREQUENCY = 30;
     
     // Hook to evaluate hunger, thirst and rest periodically
-    Hooks.on('updateWorldTime', async (seconds, elapsed) => {
-      if (!game.settings.get("fit", "enabled")) return;
-    
-   
-      _sessionTime += elapsed;
-      if (_sessionTime < EVAL_FREQUENCY) return;
-      _sessionTime = 0;
-    
-      if (!game.scenes.active || !game.user.isGM) return;
-    
-      const activeTokens = game.scenes.active.tokens.map(token => token.actorId);
-      const activeUsers = game.users.filter(user => user.active && !user.isGM);
-    
-      game.actors.forEach(async actor => {
+Hooks.on('updateWorldTime', async (seconds, elapsed) => {
+    if (!game.settings.get("fit", "enabled")) return;
+
+    _sessionTime += elapsed;
+    if (_sessionTime < EVAL_FREQUENCY) return;
+    _sessionTime = 0;
+
+    if (!game.scenes.active || !game.user.isGM) return;
+
+    const activeTokens = game.scenes.active.tokens.map(token => token.actorId);
+    const activeUsers = game.users.filter(user => user.active && !user.isGM);
+
+    game.actors.forEach(async actor => {
         if (!actor.hasPlayerOwner || !activeTokens.includes(actor.id)) return; // ✅ Only evaluate active scene actors
-    
+
         // ✅ Restore `skipMissingPlayers` check
         const activeUser = activeUsers.find(user => actor.testUserPermission(user, "OWNER"));
         if (!activeUser && game.settings.get('fit', 'skipMissingPlayers')) return; // ✅ Skip missing players
-    
-        // ✅ Use trackHunger() and trackRest() instead of manual updates and also trigger evaluateHunger()to send chat messages
+
+        // ✅ Track Hunger if enabled
         if (game.settings.get("fit", "hungerTracking")) {
-          await trackHunger(actor);
-        
-        // ✅ Required to send a chat message when hunger is increased.
-          await evaluateHunger(actor);
+            await trackHunger(actor);
         }
 
+        // ✅ Track Thirst if enabled
         if (game.settings.get("fit", "thirstTracking")) {
-          trackRest(actor);
-        }        
-        if (game.settings.get("fit", "restTracking")) {
-          trackRest(actor);
+            await trackThirst(actor);
         }
-      });
+
+        // ✅ Track Rest if enabled
+        if (game.settings.get("fit", "restTracking")) {
+            trackRest(actor);
+        }
+
+        // ✅ Always evaluate needs if either Hunger OR Thirst is enabled
+        if (game.settings.get("fit", "hungerTracking") || game.settings.get("fit", "thirstTracking")|| game.settings.get("fit", "restTracking")) {
+            await evaluateNeeds(actor);
+            updateExhaustion(actor);
+        }
     });
+});
+
 
   // Add a button to the Scene Controls for toggling the Hunger Table
   Hooks.on("getSceneControlButtons", (controls) => {

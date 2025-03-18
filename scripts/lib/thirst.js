@@ -2,7 +2,21 @@
 
 import { DEFAULT_THIRST_LEVEL, THIRST_LEVEL, } from './constants.js';// Ensure thirst icons are imported for consistency
 import { daysFromSeconds } from "./time.js"; // Utility functions to calculate time differences.
+import { updateExhaustion } from "./systems/dnd5e.js";
 
+
+/*-------------------------------------------------
+Initialize Thirst Tracking
+---------------------------------------------------*/
+export const initializeThirst = async (actor) => {
+  const now = game.time.worldTime;
+  await Promise.all([
+    actor.setFlag('fit', 'secondsSinceLastDrink', 0),
+    actor.setFlag('fit', 'lastDrinkAt', now),
+    actor.setFlag('fit', 'lastDrinkNotificationAt', now) // ✅ Added for Thirst Tracking
+  ]);
+  Hooks.call('initializeThirst', actor);
+};
 
 /*-------------------------------------------------
 Helper function to calculate daysSinceLastDrinkForActor

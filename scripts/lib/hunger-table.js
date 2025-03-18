@@ -24,7 +24,7 @@ export default class HungerTable extends Application {
     } else {
       hungerTable = new HungerTable();
       hungerTable.system = system;
-      Hooks.on('evaluateHunger', async () => { hungerTable.render(false); });
+      Hooks.on('evaluateNeeds', async () => { hungerTable.render(false); });
       Hooks.on('consumeFood', async () => { hungerTable.render(false); });
       Hooks.on('updateHunger', async () => { hungerTable.render(false); });
       Hooks.on('resetHunger', async () => { hungerTable.render(false); });
