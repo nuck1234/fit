@@ -1,3 +1,4 @@
+import { hungerIcon } from "./hunger.js"; // Import hungerIcon
 import { daysHungryForActor, hungerLevel } from "./hunger.js"; // Import daysHungryForActor and hungerLevel
 import { daysSinceLastDrinkForActor, thirstLevel } from "./thirst.js"; // Import daysHungryForActor and hungerLevel
 import { daysSinceLastRestForActor, restLevel } from "./rested.js"; // Import daysHungryForActor and hungerLevel
@@ -120,10 +121,10 @@ let chatContent = `
 if (hungerEnabled) {
     chatContent += `
         <div>
-        ${game.i18n.localize("fit.chat.you_are")}:  ${(`${hunger}`)} 
+            ${game.i18n.localize("fit.chat.you_are")}:  ${(`${hunger}`)}
         </div>
         <div style="font-size: 11px; color: gray;">
-        ${game.i18n.localize("fit.chat.eaten_since")} <strong>${displayMeal.date}</strong> ${game.i18n.localize("fit.at")} <strong>${displayMeal.time}</strong>.
+            ${game.i18n.localize("fit.chat.eaten_since")} <strong>${displayMeal.date}</strong> ${game.i18n.localize("fit.at")} <strong>${displayMeal.time}</strong>.
         </div>
     `;
 }
