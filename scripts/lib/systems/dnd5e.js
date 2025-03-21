@@ -163,10 +163,7 @@ export async function evaluateNeeds(actor) {
         actor.sheet.render(true);
       }
     
-      const hungerTable = game.modules.get("fit")?.api?.hungerTable;
-      if (hungerTable?.rendered) {
-        hungerTable.render(true);
-      }
+      
     };
     
     Hooks.on('updateExhaustionEffect', async (actor) => {
@@ -218,7 +215,5 @@ Hooks.on("updateItem", async (item, change, diff, userId) => {
     if (isWater) await consumeWater(actor);
   }
 
-  if (actor.sheet?.rendered) actor.sheet.render(true);
-  const hungerTable = game.modules.get("fit")?.api?.hungerTable;
-  if (hungerTable?.rendered) hungerTable.render(true);
+
 });

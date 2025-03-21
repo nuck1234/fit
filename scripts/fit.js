@@ -1,7 +1,5 @@
 // Import necessary modules and constants
 import registerSettings from "./lib/settings.js";
-import { preloadTemplates } from "./lib/preloadTemplates.js";
-import HungerTable from './lib/hunger-table.js';
 import { evaluateNeeds, updateExhaustion } from "./lib/systems/dnd5e.js";
 import { trackHunger, initializeHunger } from "./lib/hunger.js";
 import { trackThirst, initializeThirst } from "./lib/thirst.js";
@@ -13,7 +11,7 @@ Module Initialization
 Hooks.once('init', async () => {
   console.log("fit | Initializing module...");
   await registerSettings();
-  await preloadTemplates();
+
 });
 
 // ✅ Ensure module hooks only run when the system is enabled
@@ -24,14 +22,7 @@ Hooks.once("ready", () => {
 
   setupHooks(); // ✅ Ensures hooks are only set when safe
 
-  // ✅ Ensure HungerTable is registered
-  const fitModule = game.modules.get("fit");
-  if (fitModule) {
-    fitModule.api = fitModule.api || {};
-    fitModule.api.hungerTable = new HungerTable(); // ✅ Properly registers the hunger table
-   
-  }
-});
+  });
 /*-------------------------------------------------
 Handle World Time Updates (Tracks Hunger Thirst & Rest)
 ---------------------------------------------------*/
@@ -230,47 +221,3 @@ Hooks.on('updateWorldTime', async (seconds, elapsed) => {
         }
     });
 });
-
-
-  // Add a button to the Scene Controls for toggling the Hunger Table
-  Hooks.on("getSceneControlButtons", (controls) => {
-    if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "hungerTracking")) return;
-  
-    const tokenControls = controls.find((c) => c.name === "token");
-    if (!tokenControls) {
-      console.error("❌ Token Controls not found!");
-      return;
-    }
-  
-    tokenControls.tools.push({
-      name: "hunger-table",
-      title: "Toggle Hunger Table",
-      icon: "fa-solid fa-utensils",
-      toggle: true,
-      css: "toggle",
-      tooltip: "Toggle Hunger Table",
-      onClick: (isActive) => {
-        const hungerTable = game.modules.get("fit")?.api?.hungerTable;
-        
-  
-        if (!hungerTable) {
-          console.error("❌ Hunger Table activation function not found.");
-          return;
-        }
-  
-        if (isActive) {
-          hungerTable.render(true);
-        } else {
-          const hungerTableWindow = Object.values(ui.windows).find(
-            (w) => w.options.title === "Hunger Table"
-          );
-          if (hungerTableWindow) {
-            hungerTableWindow.close();
-          } else {
-            console.warn("⚠️ Hunger Table window not found to close.");
-          }
-        }
-      },
-    });
-  });
-  

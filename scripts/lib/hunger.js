@@ -64,7 +64,7 @@ export const daysHungryForActor = (actor) => {
  ---------------------------------------------------------------------*/
   export const hungerLevel = (actor) => {
     const level = HUNGER_LEVELS[hungerIndex(actor)] || "unknown";
-    return game.i18n.localize(`${level}`);// added for table and chat issue
+    return game.i18n.localize(`${level}`);// added for chat issue
 };
 
 /*--------------------------------------------------------------------
@@ -140,7 +140,7 @@ export async function resetHungerAfterMeal(actor) {
 }
 
 /*--------------------------------------------------------------------
- Function to get last meal time (for Hunger Table)
+ Function to get last meal time
  ---------------------------------------------------------------------*/
 export const lastMealAt = (actor) => {
   if (!actor) return 0;

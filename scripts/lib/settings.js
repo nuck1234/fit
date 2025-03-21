@@ -53,16 +53,6 @@ await game.settings.register("fit", "restTracking", {
     default: true,
   })
 
-  /* Register the number of rations required per day per actor.
-  await game.settings.register('fit', 'rationsPerDay', {
-    name: "Rations Per Day",
-    hint: "Each actor consumes this number of rations per day",
-    scope: "world",
-    config: true,
-    type: Number,
-    default: 1,
-  })
-    */
 
   // Register the base tolerance (number of days without food before hunger starts).
 await game.settings.register('fit', 'baseTolerance', {
@@ -95,17 +85,7 @@ await game.settings.register("fit", "baseThirst", {
   requiresReload: true
 });
 
-  /* Register the maximum level of exhaustion that can be applied due to hunger.
-  await game.settings.register('fit', 'maxExhaustion', {
-    name: "Max Exhaustion to apply",
-    hint: "Apply no more than this many levels of exhaustion due to hunger and thirst",
-    scope: "world",
-    config: true,
-    type: Number,
-    default: 2,
-  })
-*/  
-  await game.settings.register("fit", "hungerEffect", {
+await game.settings.register("fit", "hungerEffect", {
     name: "Enable Hunger additional effects",
     hint: "If enabled, hunger additional effects will be active reducing the Max Hit Points for every hunger level. Check to hunger effect.",
     scope: "world",

@@ -1,14 +1,4 @@
 /*
  * MODULE.CSS
- * This file contains the styles used to define the appearance of the "Time-2-Eat" module's user interface components.
- * It ensures a consistent visual theme and provides spacing, layout, and aesthetic rules for elements within the module.
- *
- * SECTIONS:
- * 1. Hunger Table Styling: Styles applied to the "hunger_table" element for table cell padding.
+ 
  */
-
-/* SECTION 1: Hunger Table Styling */
-/* This style applies to all <td> elements within the hunger_table element. */
-#hunger_table td {
-  padding: 5px; /* Adds consistent spacing inside each table cell. */
-}
