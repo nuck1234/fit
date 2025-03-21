@@ -214,6 +214,4 @@ Hooks.on("updateItem", async (item, change, diff, userId) => {
     if (isFood) await consumeFood(actor);
     if (isWater) await consumeWater(actor);
   }
-
-
 });

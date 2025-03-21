@@ -30,8 +30,6 @@ await game.settings.register("fit", "thirstTracking", {
   requiresReload: true
 })
 
-
-
 await game.settings.register("fit", "restTracking", {
   name: "Enable Rest Tracking",
   hint: "If enabled, rest tracking will be active. Uncheck to disable rest tracking.",

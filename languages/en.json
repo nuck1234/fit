@@ -12,23 +12,17 @@
     "fit.chat.eaten_since": "You haven't eaten since",
     "fit.chat.havent_drunk_since": "You haven't drunk since",
     "fit.chat.havent_rested_since": "You haven't rested since",
-    "fit.chat.to_regain_your_strength": "to regain your strength",
-    "fit.chat.to_satisfy_your_hunger": "to satisfy your hunger",
-    "fit.chat.to_satisfy_your_thirst": "to satisfy your thirst",
     "fit.at": "at",
     "fit.on": "on",
     "fit.none": "none",
-    "fit.use": "use",
     "fit.hunger.Unconscious": "Unconscious",
     "fit.hunger.critically_hungry": "Critically Hungry",
     "fit.hunger.severely_hungry": "Severely Hungery",
     "fit.hunger.desperate_for_food": "Desperate for Food",
     "fit.hunger.hungry": "Hungry",
     "fit.hunger.peckish": "A Bit Peckish",
-    "fit.hunger.Fully Satisfied": "Fully Satisfied",
-    "fit.hunger.full": "Full",
-    "fit.hunger.stuffed": "Stuffed",
-    "fit.hunger.unknown": "Unknown"
+    "fit.hunger.Fully Satisfied": "Fully Satisfied"
+
 
 
 }
