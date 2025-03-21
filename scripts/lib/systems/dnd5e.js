@@ -104,13 +104,12 @@ export async function evaluateNeeds(actor) {
   // 💬 Only send one chat message, even if multiple systems triggered
   if (shouldSendNotification) {
     const chatContent = await sendHungerNotification(actor); 
-    if (chatContent.trim()) { // ✅ Only send if content is not empty
-        hungerChatMessage(chatContent, actor);
+    if (chatContent && chatContent.trim()) { // ✅ Fix: prevent .trim() on undefined
+      hungerChatMessage(chatContent, actor);
     } else {
-        console.warn(`[fit] Skipped sending empty chat message for ${actor.name}`);
+      console.warn(`[fit] Skipped sending empty chat message for ${actor.name}`);
     }
-}
-
+  }
 
   Hooks.call('evaluateNeeds', actor);
 }
@@ -121,20 +120,37 @@ export async function evaluateNeeds(actor) {
   
     // Helper function to configure active effects based on hunger.
     export function activeEffectConfig(actor, daysHungry) {
-      if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "hungerEffect")) return; // ✅ Stops additional hunger effects if disabled
-      const currentHungerLevel = hungerLevel(actor); // Get the actual hunger level
-  
-      return {
-          icon: hungerIcon(currentHungerLevel), // ✅ Uses correct hunger icon
-          label: `Hunger Level (${currentHungerLevel})`, // ✅ Dynamic effect name for UI
-          flags: { fit: { hungerEffect: true } }, // ✅ Marks this as a hunger effect for easy removal
-          changes: [
-              { key: 'system.attributes.hp.tempmax', mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE, value: -daysHungry }
-          ],
-          duration: { rounds: 10 }
+      if (!game.settings.get("fit", "enabled") || !game.settings.get("fit", "hungerEffect")) return;
+    
+      const currentHungerLevel = hungerLevel(actor);
+      const iconPath = hungerIcon(currentHungerLevel);
+    
+      // ✅ Check Foundry version and choose the right property
+      const foundryMajorVersion = parseInt(game.version?.split(".")[0]) || 10; // fallback to 10 if undefined
+      const isV12OrNewer = foundryMajorVersion >= 12;
+    
+      const effectConfig = {
+        label: `Hunger Level (${currentHungerLevel})`,
+        flags: { fit: { hungerEffect: true } },
+        changes: [
+          {
+            key: 'system.attributes.hp.tempmax',
+            mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
+            value: -daysHungry
+          }
+        ],
+        duration: { rounds: 10 }
       };
-  }
-
+    
+      // 🔄 Add appropriate image property
+      if (isV12OrNewer) {
+        effectConfig.img = iconPath;
+      } else {
+        effectConfig.icon = iconPath;
+      }
+    
+      return effectConfig;
+    }
     /*============================================
     Update Exhaustion UI based on Rest and Hunger
     =============================================*/
