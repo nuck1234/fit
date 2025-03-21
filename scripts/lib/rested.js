@@ -42,12 +42,11 @@ export const daysSinceLastRestForActor = (actor) => {
   
 
 
-  // ✅ Cap the max days without rest at 6 (to align with rest limit)
-  // ✅ Adjust the cap dynamically to include baseRest
-  const maxDaysWithoutRest = 6 + baseRest; 
-  daysSinceLastRest = Math.min(maxDaysWithoutRest, daysSinceLastRest); 
+  // ✅ Apply Base Tolerance before capping
+  let adjustedDays = Math.max(daysSinceLastRest - baseRest, 0);
 
-  return Math.max(daysSinceLastRest, 0);
+  // ✅ Cap at 6 (max limit)
+  return Math.min(adjustedDays, 6);
 };
 /*--------------------------------------------------------------------
  Function to calculate the restIndex based on daysSinceLastRestForActor.

@@ -42,12 +42,11 @@ export const daysHungryForActor = (actor) => {
   // ✅ Apply Constitution Modifier
   let conMod = actor.system?.abilities?.con?.mod ?? 0;
 
-  // ✅ Cap the max days without food at 6 + baseTolerance (to align with exhaustion limits)
-  // ✅ Adjust the cap dynamically to include baseRest
-  const maxDaysWithoutFood = 6 + baseTolerance;
-  daysSinceLastMeal = Math.min(maxDaysWithoutFood, daysSinceLastMeal - conMod);
+  // ✅ Apply Base Tolerance before capping
+  let adjustedDays = Math.max(daysSinceLastMeal - conMod - baseTolerance, 0);
 
-  return Math.max(daysSinceLastMeal, 0);
+  // ✅ Cap at 6 (max limit)
+  return Math.min(adjustedDays, 6);
 };
 /*--------------------------------------------------------------------
  Function to calculate the hungerIndex based on daysHungryForActor.
