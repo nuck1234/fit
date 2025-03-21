@@ -69,7 +69,7 @@ export const daysHungryForActor = (actor) => {
 };
 
 /*--------------------------------------------------------------------
- Function to calculate updateHunger based on elapsed time
+  Function to be used for hunger tracking
  ---------------------------------------------------------------------*/
 export const trackHunger = async (actor, elapsed) => {
   const tokenInScene = game.scenes.active?.tokens.some(token => token.actorId === actor.id);
@@ -137,7 +137,7 @@ export async function resetHungerAfterMeal(actor) {
   await setLastMealTime(actor); // ✅ Reset last meal time only
 
   // ✅ Instead of updating exhaustion directly, call the Hook so dnd5e.js handles it
-  Hooks.call("updateHungerEffect", actor);
+  Hooks.call("updateExhaustionEffect", actor);
 }
 
 /*--------------------------------------------------------------------

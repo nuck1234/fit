@@ -179,24 +179,24 @@ export async function evaluateNeeds(actor) {
     };
 
 
-    Hooks.on('updateExhaustionEffect', async (actor) => {
+    export const updateNeedsUI = (actor) => {
       if (!game.settings.get("fit", "enabled")) return;
-  
- 
+    
       updateExhaustion(actor);
-  
-      // ✅ Only refresh the UI if the sheet is already open
+    
       if (actor.sheet?.rendered) {
-          actor.sheet.render(true);
-      } else {
+        actor.sheet.render(true);
       }
-
-          // ✅ Refresh the Hunger Table if it's open
-    const hungerTable = game.modules.get("fit")?.api?.hungerTable;
-    if (hungerTable?.rendered) {
+    
+      const hungerTable = game.modules.get("fit")?.api?.hungerTable;
+      if (hungerTable?.rendered) {
         hungerTable.render(true);
-    }
-});
+      }
+    };
+    
+    Hooks.on('updateExhaustionEffect', async (actor) => {
+      updateNeedsUI(actor);
+    });
     
 
 /*==================================================
@@ -214,76 +214,36 @@ Hooks.on('createChatMessage', async (message) => {
 });
 
 /*==================================================
-CONSUME FOOD
+CONSUME FOOD OR WATER FROM INVENTORY
 ===================================================*/  
-  //Consume food from inventory
-  Hooks.on('preUpdateItem', async (item, change) => {
-    if (change.hasOwnProperty('sort')) return; // Ignore reordering
-     
-    // Check if the item's name matches the configured ration name
-    if (game.settings.get('fit', 'rationName') === item.name) {
-      const actor = game.actors.get(item.actor.id);
-   
-      if (!actor) {
-      console.error("Actor not found for item:", item);
-    return;
-      }
-   
-    // Determine if the item was consumed based on its uses or quantity
-       const consumedUses = item.system.uses?.value !== undefined && change.system.uses?.value === item.system.uses.value - 1;
-       const consumedQuantity = item.system.quantity !== undefined && change.system.quantity === item.system.quantity - 1;
-      
-       if (consumedUses || consumedQuantity) {
-          
-    // ✅ Now calls `consumeFood()` from hunger.js inside dnd5e.js
-       await consumeFood(actor);
-    // ✅ Refresh the Hunger Table if it's open
-    const hungerTable = game.modules.get("fit")?.api?.hungerTable;
-    if (hungerTable?.rendered) {
-        console.log("🔄 Refreshing Hunger Table after consuming food");
-        hungerTable.render(true);
-    }
-          }
-        }
-      });
+Hooks.on("updateItem", async (item, change, diff, userId) => {
+  const actor = item.actor;
+  if (!actor) return;
 
-/*==================================================
-CONSUME Drink
-===================================================*/  
-  //Consume drink from inventory
-  Hooks.on('preUpdateItem', async (item, change) => {
-    if (change.hasOwnProperty('sort')) return; // Ignore reordering
-     
-    // Check if the item's name matches the configured ration name
-    if (game.settings.get('fit', 'waterName') === item.name) {
-      const actor = game.actors.get(item.actor.id);
-   
-      if (!actor) {
-      console.error("Actor not found for item:", item);
-    return;
-      }
-   
-    // Determine if the item was consumed based on its uses or quantity
-       const consumedUses = item.system.uses?.value !== undefined && change.system.uses?.value === item.system.uses.value - 1;
-       const consumedQuantity = item.system.quantity !== undefined && change.system.quantity === item.system.quantity - 1;
-      
-       if (consumedUses || consumedQuantity) {
-          
-    // ✅ Now calls `consumeWater()` from thirst.js inside dnd5e.js
-       await consumeWater(actor);
-   
-          }
-        }
-      });
-      
+  const rationName = game.settings.get("fit", "rationName");
+  const waterName = game.settings.get("fit", "waterName");
+  const isFood = item.name === rationName;
+  const isWater = item.name === waterName;
+  if (!isFood && !isWater) return;
 
+  console.group(`🧪 [fit] updateItem DETECTED for ${item.name} (Actor: ${actor.name})`);
+  console.log("Item:", item);
+  console.log("Change Object:", change);
+  console.groupEnd();
 
+  // ✅ Check if `uses.spent` exists and is greater than 0
+  const spent = foundry.utils.getProperty(item.system, "uses.spent") ?? 0;
+  const chargeUsed = spent >= 0; // Simply check if any charge is used
 
+  console.log(`🔍 Uses spent: ${spent}, Charge Used? ${chargeUsed}`);
 
+  if (chargeUsed) {
+    console.log(`✅ [fit] Triggering ${isFood ? "consumeFood" : "consumeWater"} for ${actor.name}`);
+    if (isFood) await consumeFood(actor);
+    if (isWater) await consumeWater(actor);
+  }
 
-
-
-
- 
-
-  
+  if (actor.sheet?.rendered) actor.sheet.render(true);
+  const hungerTable = game.modules.get("fit")?.api?.hungerTable;
+  if (hungerTable?.rendered) hungerTable.render(true);
+});
