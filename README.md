@@ -96,9 +96,5 @@ Furture enhgancements
 - **High altitudes** could affect fatigue tracking.
 
 ---
-
-## **Troubleshooting**
-### **1. Hunger/Thirst Not Updating?**
-Ensure the **game clock is running**:
-```js
-game.Gametime.startRunning()
+## **Acknowledgements**
+Thank you for the author of Burger Time https://github.com/scottburton11/burger-time/commits?author=scottburton11 for the idea and smoething to aim for.
