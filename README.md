@@ -96,5 +96,7 @@ Furture enhgancements
 - **High altitudes** could affect fatigue tracking.
 
 ---
-## **Acknowledgements**
-Thank you for the author of Burger Time https://github.com/scottburton11/burger-time/commits?author=scottburton11 for the idea and smoething to aim for.
+## **
+Acknowledgements**
+Thank you for the author of Burger Time https://github.com/scottburton11/burger-time, Scott Burton for the idea and smoething to aim for.
+
