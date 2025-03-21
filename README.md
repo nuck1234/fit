@@ -20,7 +20,7 @@ FIT tracks **hunger**, **thirst**, and **rest** based on:
 - **Constitution modifiers affecting metabolism**
 - **Environmental effects (configurable in settings)**
 
-FIT updates actor states automatically, with configurable thresholds for when **hunger, thirst, and fatigue** take effect.
+FIT updates actor states automatically, with configurable base thresholds for when **hunger, thirst, and fatigue** take effect. - Configured in the settings
 
 ### **Hunger, Thirst & Rest System**
 - **Time-based tracking** automatically increases hunger and thirst.
@@ -46,9 +46,9 @@ FIT applies progressive effects based on a character’s **deprivation level**:
 | **Level 3** | Desperate for Food | Desperate for Water | Desperate for Sleep | Disadvantage on Attack Rolls and Saving Throws |
 | **Level 4** | Severely Hungry | Severely Dehydrated | Severely Tired | Hit Point Maximum halved |
 | **Level 5** | Critically Hungry | Critically Dehydrated | Critically Tired | Speed reduced to 0 |
-| **Level 6 (final state)** | Unconscious | Unconscious | Unconscious | Death |
+| **Level 6 (final state)** | Death | Death | Death | Death |
 
-By default, **FIT does not enforce death from starvation/dehydration** but this can be customized.
+By default, **Exhaustion levels are applied using the Foundry starvation/dehydration/Rest** This maybe reviewed in the future.
 
 ---
 
@@ -57,17 +57,12 @@ FIT is fully customizable to fit your campaign needs.
 
 ### **Base Rates for Hunger, Thirst & Rest**
 - **Hunger Rate**: Default is **1 meal per 24 hours**.
-- **Thirst Rate**: Default is **1 waterskin per 24 hours**.
-- **Rest Requirement**: Tracks **exhaustion for lack of sleep**.
+- **Thirst Rate**: Default is **1 waterskin charge per 24 hours**.
+- **Rest Requirement**: Tracks **One long rest per 24 hours**.
 
 ### **Constitution Modifier Impact**
 - A **higher Constitution** score extends the time before hunger and thirst effects begin.
-- A **lower Constitution** score reduces survival time before penalties apply.
-
-### **Environmental Effects (Future Feature)**
-- **Desert environments** will increase **thirst rate**.
-- **Cold environments** may increase **hunger rate** (for warmth).
-- **High altitudes** could affect **fatigue tracking**.
+- A **lower Constitution** Penalties will apply after 24 hours.
 
 ---
 
@@ -93,7 +88,13 @@ FIT applies **Exhaustion effects automatically** when deprivation reaches certai
 | **5** | Speed Reduced to 0 |  ✅ Yes |
 | **6** | Death |  ✅ Yes |
 
-GMs can enable **automatic enforcement** of Level 4+ effects via **FIT module settings**.
+
+---
+Furture enhgancements
+### **Environmental Effects (Future Feature)**
+- **Desert environments** will increase thirst rate.
+- **Cold environments** may increase hunger rate (for warmth).
+- **High altitudes** could affect fatigue tracking.
 
 ---
 
