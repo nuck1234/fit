@@ -31,8 +31,9 @@
   ],
 
   "url": "https://github.com/nuck1234/fit",
-  "manifest": "",
-  "download": "",
+  "manifest": "https://github.com/nuck1234/fit/releases/download/v1.0.0/module.json",
+  "download": "https://github.com/nuck1234/fit/releases/download/v1.0.0/module.zip",
+  
   "relationships": {
     "requires": [
       {
