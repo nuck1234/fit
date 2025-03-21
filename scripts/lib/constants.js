@@ -65,9 +65,6 @@ const THIRST_ICONS = [
 // Default hunger level for a character when no hunger effects are applied ("satisfied").
 const DEFAULT_THIRST_LEVEL = 0;// changed to zero
 
-
-
-
 /* =========================
    Rest Levels and Icons
    ========================= */

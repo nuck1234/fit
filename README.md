@@ -88,7 +88,6 @@ FIT applies **Exhaustion effects automatically** when deprivation reaches certai
 | **5** | Speed Reduced to 0 |  ✅ Yes |
 | **6** | Death |  ✅ Yes |
 
-
 ---
 Furture enhgancements
 ### **Environmental Effects (Future Feature)**

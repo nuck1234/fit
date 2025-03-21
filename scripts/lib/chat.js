@@ -96,8 +96,6 @@ export async function sendHungerNotification(actor) {
   const hunger = hungerLevel(actor);
   const thirst = thirstLevel(actor); // ✅ New thirst tracking function
   const rest = restLevel(actor); // ✅ Get Rest Level
-
-
   
   // ✅ Check if Hunger and Thirst tracking are enabled
 const hungerEnabled = game.settings.get("fit", "hungerTracking");

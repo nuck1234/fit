@@ -3,7 +3,6 @@ import { DEFAULT_HUNGER_LEVEL, HUNGER_LEVELS, HUNGER_ICONS } from './constants.j
 import { daysFromSeconds } from './time.js';
 import { updateExhaustion } from "./systems/dnd5e.js";
 
-
 /*-------------------------------------------------
 Initialise for Chat Message
 ---------------------------------------------------*/
@@ -199,7 +198,6 @@ export const removeHungerEffects = async (actor) => {
 
   Hooks.call('removeHungerEffects', actor);
 };
-
 
 /*--------------------------------------------------------------------
  Function to calculate the hungerIcon based on hungerIndex.

@@ -4,7 +4,6 @@ import { DEFAULT_THIRST_LEVEL, THIRST_LEVEL, } from './constants.js';// Ensure t
 import { daysFromSeconds } from "./time.js"; // Utility functions to calculate time differences.
 import { updateExhaustion } from "./systems/dnd5e.js";
 
-
 /*-------------------------------------------------
 Initialize Thirst Tracking
 ---------------------------------------------------*/

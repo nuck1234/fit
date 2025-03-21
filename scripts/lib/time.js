@@ -1,7 +1,6 @@
 // This script provides utility functions related to time calculations.
 // It is used throughout the module to handle time-based operations such as determining elapsed time
 // and converting between different units of time.
-
 // Import the DAY constant from the constants.js module
 // The DAY constant represents the number of seconds in a day.
 import { DAY } from "./constants.js";

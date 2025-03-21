@@ -40,8 +40,6 @@ export const daysSinceLastRestForActor = (actor) => {
   let daysSinceLastRest = daysFromSeconds(elapsedTime);
   
   
-
-
   // ✅ Apply Base Tolerance before capping
   let adjustedDays = Math.max(daysSinceLastRest - baseRest, 0);
 

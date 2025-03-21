@@ -56,7 +56,6 @@ async function handleWorldTimeUpdate(seconds, elapsed) {
   });
 }
 
-
 /*-------------------------------------------------
 Setup Foundry Hooks
 ---------------------------------------------------*/
