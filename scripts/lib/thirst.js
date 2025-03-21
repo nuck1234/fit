@@ -43,12 +43,11 @@ export const daysSinceLastDrinkForActor = (actor) => {
   
 
 
-  // ✅ Cap the max days without thirst at 6 (to align with thirst limit)
-  // ✅ Adjust the cap dynamically to include baseThirst
-  const maxDaysWithoutDrink = 6 + baseThirst; 
-  daysSinceLastDrink = Math.min(maxDaysWithoutDrink, daysSinceLastDrink); 
+  // ✅ Apply Base Tolerance before capping
+  let adjustedDays = Math.max(daysSinceLastDrink - baseThirst, 0);
 
-  return Math.max(daysSinceLastDrink, 0);
+  // ✅ Cap at 6 (max limit)
+  return Math.min(adjustedDays, 6);
 };
 /*--------------------------------------------------------------------
  Function to calculate the thirstIndex based on daysSinceLastDrinkForActor.
