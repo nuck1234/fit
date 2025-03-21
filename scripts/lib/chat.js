@@ -226,7 +226,10 @@ Hooks.on('renderChatLog', async (app, html, data) => {
       await item.update({ "system.quantity": quantity - 1 });
       await actor.setFlag('fit', 'lastMealAt', game.time.worldTime);
 
-      ChatMessage.create({ content: `${actor.name} consumes a ration. Hunger has been reset.` });
+       // ✅ Only send chat message if setting is enabled
+    if (game.settings.get("fit", "confirmChat")) {
+        ChatMessage.create({ content: `${actor.name} consumes a ration. Hunger has been reset.` });
+    }
       ui.notifications.info(`${actor.name} has consumed a ration. Remaining: ${quantity - 1}`);
 
       // ✅ Ensure exhaustion updates after eating
@@ -258,7 +261,10 @@ Hooks.on('renderChatLog', async (app, html, data) => {
       await item.update({ "system.quantity": quantity - 1 });
       await actor.setFlag('fit', 'lastDrinkAt', game.time.worldTime);
 
-      ChatMessage.create({ content: `${actor.name} drinks water. Thirst has been reset.` });
+      // ✅ Only send chat message if setting is enabled
+    if (game.settings.get("fit", "confirmChat")) {
+        ChatMessage.create({ content: `${actor.name} drinks water. Thirst has been reset.` });
+    }
       ui.notifications.info(`${actor.name} has drunk water. Remaining: ${quantity - 1}`);
 
       // ✅ Ensure exhaustion updates after drinking

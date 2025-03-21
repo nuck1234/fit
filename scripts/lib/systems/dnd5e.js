@@ -73,76 +73,51 @@ export async function evaluateNeeds(actor) {
   const thirstEnabled = game.settings.get("fit", "thirstTracking");
   const restEnabled = game.settings.get("fit", "restTracking");
 
-  if (!hungerEnabled && !thirstEnabled && !restEnabled) return; // ✅ Stops if all tracking is disabled
+  if (!hungerEnabled && !thirstEnabled && !restEnabled) return;
 
   const currentTime = game.time.worldTime;
   let shouldSendNotification = false;
-  let chatContent = ``;
 
-  // ✅ Evaluate Hunger
+  const hungerDue = hungerEnabled && daysFromSeconds(currentTime - (actor.getFlag('fit', 'lastMealNotificationAt') || 0)) >= 1;
+  const thirstDue = thirstEnabled && daysFromSeconds(currentTime - (actor.getFlag('fit', 'lastDrinkNotificationAt') || 0)) >= 1;
+  const restDue = restEnabled && daysFromSeconds(currentTime - (actor.getFlag('fit', 'lastRestNotificationAt') || 0)) >= 1;
+
+  if (hungerDue || thirstDue || restDue) {
+    shouldSendNotification = true;
+    
+    // 🔄 Update all relevant flags even if not all are due
+    if (hungerDue) await actor.setFlag('fit', 'lastMealNotificationAt', currentTime);
+    if (thirstDue) await actor.setFlag('fit', 'lastDrinkNotificationAt', currentTime);
+    if (restDue) await actor.setFlag('fit', 'lastRestNotificationAt', currentTime);
+  }
+
+  // 🥘 Hunger Effects still happen independently
   if (hungerEnabled) {
-      const lastMealNotificationAt = actor.getFlag('fit', 'lastMealNotificationAt') || 0;
-      const daysSinceLastMealNotification = daysFromSeconds(currentTime - lastMealNotificationAt);
-      const daysHungry = daysHungryForActor(actor);
-
-      await actor.setFlag('fit', 'lastMealNotificationAt', currentTime);
-
-      if (daysSinceLastMealNotification >= 1) {
-          console.log(`${actor.name} - ✅ Sending hunger notification!`);
-          const hungerMessage = await sendHungerNotification(actor);
-          if (hungerMessage) {
-              chatContent += hungerMessage;
-              shouldSendNotification = true;
-          }
-      }
-
-      // ✅ Apply Hunger Effects (No Thirst Effects Exist)
-      if (daysHungry >= 1 && game.settings.get("fit", "hungerEffect")) {
-          await removeHungerEffects(actor);
-          const config = activeEffectConfig(actor, daysHungry);
-          await addOrUpdateHungerEffect(actor, config);
-      }
-  }
-
-  // ✅ Evaluate Thirst (NO EFFECTS, Only Chat Updates)
-  if (thirstEnabled) {
-      const lastDrinkNotificationAt = actor.getFlag('fit', 'lastDrinkNotificationAt') || 0;
-      const daysSinceLastDrinkNotification = daysFromSeconds(currentTime - lastDrinkNotificationAt);
-      const daysThirsty = daysSinceLastDrinkForActor(actor);
-
-      
-      if (daysSinceLastDrinkNotification >= 1) {
-          console.log(`${actor.name} - ✅ Sending thirst notification!`);
-          const thirstMessage = await sendHungerNotification(actor); // ✅ Uses same function
-          if (thirstMessage) {
-              chatContent += thirstMessage;
-              shouldSendNotification = true;
-          }
-          await actor.setFlag('fit', 'lastDrinkNotificationAt', currentTime);
-      }
-  }
-  // ✅ Evaluate rest (NO EFFECTS, Only Chat Updates)
-  if (restEnabled) {
-    console.log(`${actor.name} - 🔄 Checking Rest`);
-    const lastRestNotificationAt = actor.getFlag('fit', 'lastRestNotificationAt') || 0;
-    const daysSinceLastRestNotification = daysFromSeconds(currentTime - lastRestNotificationAt);
-    if (daysSinceLastRestNotification >= 1) {
-        console.log(`${actor.name} - ✅ Sending rest notification!`);
-        chatContent += await sendHungerNotification(actor);
-        shouldSendNotification = true;
+    const daysHungry = daysHungryForActor(actor);
+    if (daysHungry >= 1 && game.settings.get("fit", "hungerEffect")) {
+      await removeHungerEffects(actor);
+      const config = activeEffectConfig(actor, daysHungry);
+      await addOrUpdateHungerEffect(actor, config);
     }
-    await actor.setFlag('fit', 'lastRestNotificationAt', currentTime);
+  }
+
+  // 💬 Only send one chat message, even if multiple systems triggered
+  if (shouldSendNotification) {
+    const chatContent = await sendHungerNotification(actor); 
+    if (chatContent.trim()) { // ✅ Only send if content is not empty
+        hungerChatMessage(chatContent, actor);
+    } else {
+        console.warn(`[fit] Skipped sending empty chat message for ${actor.name}`);
+    }
 }
 
-
-  // ✅ Send Chat Message if Needed
-  if (shouldSendNotification) {
-      console.log(`${actor.name} - ✅ Sending chat message`);
-      hungerChatMessage(chatContent, actor);
-  }
 
   Hooks.call('evaluateNeeds', actor);
 }
+
+
+
+
   
     // Helper function to configure active effects based on hunger.
     export function activeEffectConfig(actor, daysHungry) {

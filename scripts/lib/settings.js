@@ -124,6 +124,7 @@ await game.settings.register("fit", "baseThirst", {
     config: true,
     type: String,
     default: "Rations",
+    requiresReload: true
 
   })
 
@@ -135,7 +136,20 @@ await game.settings.register("fit", "baseThirst", {
     config: true,
     type: String,
     default: "Waterskin",
+    requiresReload: true
   })
+
+  // send chat message after eating.
+await game.settings.register('fit', 'confirmChat', {
+  name: "Consumption Confirmation",
+  hint: "check this box to send a chat message after eating or drinking",
+  scope: "world",
+  type: Boolean,
+    default: false, // Default: Chat confirmation OFF
+    requiresReload: true
+})
 }
+
+
 
 export default registerSettings;
