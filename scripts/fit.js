@@ -2,7 +2,7 @@
 import registerSettings from "./lib/settings.js";
 import { preloadTemplates } from "./lib/preloadTemplates.js";
 import HungerTable from './lib/hunger-table.js';
-import { evaluateNeeds } from "./lib/systems/dnd5e.js";
+import { evaluateNeeds, updateExhaustion } from "./lib/systems/dnd5e.js";
 import { trackHunger, initializeHunger } from "./lib/hunger.js";
 import { trackThirst, initializeThirst } from "./lib/thirst.js";
 import { trackRest, initializeRest } from "./lib/rested.js";
@@ -122,8 +122,8 @@ Token Event Handler
 
       // ✅ Restore stored thirst state
       if (game.settings.get("fit", "thirstTracking")) {
-        const elapsedHungerTime = actor.getFlag('fit', 'thirstElapsedTime') || 0;
-        await actor.setFlag('fit', 'lastDrinkAt', currentTime - elapsedHungerTime);
+        const elapsedThirstTime = actor.getFlag('fit', 'thirstElapsedTime') || 0;
+        await actor.setFlag('fit', 'lastDrinkAt', currentTime - elapsedThirstTime);
         await actor.unsetFlag('fit', 'thirstElapsedTime');
 
         console.log(`${actor.name} - 🍽️ Restored lastDrinkAt to: ${currentTime - elapsedThirstTime}`);
@@ -168,7 +168,7 @@ Hooks.on('preDeleteToken', async (document) => {
   // ✅ Store elapsed thirst time (same logic as rest)
   if (game.settings.get("fit", "thirstTracking")) {
     const lastDrinkAt = actor.getFlag('fit', 'lastDrinkAt') || currentTime;
-    const elapsedThirstTime = currentTime - lastDrinklAt;
+    const elapsedThirstTime = currentTime - lastDrinkAt;
     await actor.setFlag('fit', 'thirstElapsedTime', elapsedThirstTime);
     
     console.log(`${actor.name} - 🍽️ Stored thirst elapsed time: ${elapsedThirstTime} seconds`);

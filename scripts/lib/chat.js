@@ -3,6 +3,7 @@ import { daysHungryForActor, hungerLevel } from "./hunger.js"; // Import daysHun
 import { daysSinceLastDrinkForActor, thirstLevel } from "./thirst.js"; // Import daysHungryForActor and hungerLevel
 import { daysSinceLastRestForActor, restLevel } from "./rested.js"; // Import daysHungryForActor and hungerLevel
 import { localize } from './utils.js'; // Import the localize function
+import { updateExhaustion } from "./systems/dnd5e.js";
 /**
  * Generates and sends a chat message to the GM(s) notifying them of hunger changes for an actor.
  *

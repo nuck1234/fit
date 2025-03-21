@@ -62,7 +62,7 @@ export const thirstIndex = (actor) => {
 };
 
 /*--------------------------------------------------------------------
- Function to calculate the thisrtLevel (in words) based on thirstIndex.
+ Function to calculate the thirstLevel (in words) based on thirstIndex.
  ---------------------------------------------------------------------*/
 export const thirstLevel = (actor) => {
   const level = THIRST_LEVEL[thirstIndex(actor)] || "unknown";
@@ -151,5 +151,5 @@ export const consumeWater = async (actor) => {
   Hooks.call('consumeWater', actor);
 
     // ✅ Ensure exhaustion recalculates after eating
-    updateExhaustion(actor);
+    Hooks.call("updateExhaustionEffect", actor);
 };
