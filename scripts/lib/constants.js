@@ -7,7 +7,7 @@
    ========================= */
 
 // List of hunger levels, from the most extreme ("starving") to the least ("stuffed").
-const HUNGER_LEVELS = [
+const HUNGER_LEVEL = [
   //"Stuffed",    // Level 0 (most well-fed) future implementation
   //"Full",       // Level 1 future implementation
   "Fully Satisfied",  // Level 2 (default state)
@@ -19,7 +19,7 @@ const HUNGER_LEVELS = [
   "Unconscious" // Level 8 (final hunger state)
 ];
 
-// Paths to icons representing each hunger level, mapped by index to the HUNGER_LEVELS array.
+// Paths to icons representing each hunger level, mapped by index to the HUNGER_LEVEL array.
 // Icons are stored in the "fit/templates/icons" directory within the module.
 const HUNGER_ICONS = [
   'modules/fit/templates/icons/level_0.png', // satisfied
@@ -50,7 +50,7 @@ const THIRST_LEVEL = [
   "Unconscious"         // Level 6 (final rest state)
 ];
 
-// Paths to icons representing each hunger level, mapped by index to the HUNGER_LEVELS array.
+// Paths to icons representing each hunger level, mapped by index to the HUNGER_LEVEL array.
 // Icons are stored in the "fit/templates/icons" directory within the module.
 const THIRST_ICONS = [
   'modules/fit/templates/icons/level_0.png', // Fully Hydrated
@@ -121,7 +121,7 @@ const DAY = HOUR * 24;        // 86400 seconds (1 day)
 
 // Export constants for use across the module.
 export {
-HUNGER_LEVELS,         // Array of hunger levels
+HUNGER_LEVEL,         // Array of hunger levels
 HUNGER_ICONS,          // Array of hunger icons
 DEFAULT_HUNGER_LEVEL,  // Default starting hunger level
 REST_LEVEL,      // Array of rest levels
@@ -134,4 +134,36 @@ SECONDS,               // Unit of time: 1 second (SECONDS)ß
 MINUTE,                // Unit of time: 1 minute (MINUTE)
 HOUR,                  // Unit of time: 1 hour (HOUR)
 DAY                                    // Unit of time: 1 day (DAY)
+}
+
+/* =========================
+   Terrain Multipliers
+   ========================= */
+export function getTerrainMultipliers() {
+  const terrain = game.settings.get("fit", "terrain") || "normal";
+
+  const multipliers = {
+    normal: {
+      hunger: 1.0,
+      thirst: 1.0,
+      rest: 1.0
+    },
+    desert: {
+      hunger: 1.0,
+      thirst: 1.5,
+      rest: 1.5
+    },
+    swamp: {
+      hunger: 1.5,
+      thirst: 1.5,
+      rest: 1.0
+    },
+    mountain: {
+      hunger: 1.5,
+      thirst: 1.0,
+      rest: 1.5
+    }
+  };
+
+  return multipliers[terrain] || multipliers.normal;
 }

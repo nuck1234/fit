@@ -1,5 +1,5 @@
 // Import necessary constants from the constants.js file
-import { DEFAULT_HUNGER_LEVEL, HUNGER_LEVELS, HUNGER_ICONS } from './constants.js'
+import { DEFAULT_HUNGER_LEVEL, HUNGER_LEVEL, getTerrainMultipliers } from './constants.js'
 import { daysFromSeconds } from './time.js';
 import { updateExhaustion } from "./systems/dnd5e.js";
 
@@ -36,33 +36,42 @@ export const daysHungryForActor = (actor) => {
     elapsedTime = game.time.worldTime - lastMealAt;
   }
 
+ 
   let daysSinceLastMeal = daysFromSeconds(elapsedTime);
   
-  // ✅ Apply Constitution Modifier
-  let conMod = actor.system?.abilities?.con?.mod ?? 0;
+// 🌍 Apply terrain-based hunger multiplier
+const hungerMultiplier = getTerrainMultipliers().hunger;
+if (hungerMultiplier > 1) {
+  daysSinceLastMeal *= hungerMultiplier;
+  console.log(`[fit] Terrain multiplier applied: ${hungerMultiplier}x hunger for ${actor.name}`);
+}
 
-  // ✅ Apply Base Tolerance before capping
-  let adjustedDays = Math.max(daysSinceLastMeal - conMod - baseTolerance, 0);
+// ✅ Apply Constitution Modifier
+let conMod = actor.system?.abilities?.con?.mod ?? 0;
 
-  // ✅ Cap at 6 (max limit)
-  return Math.min(adjustedDays, 6);
+// ✅ Apply Base Tolerance before capping
+let adjustedDays = Math.max(daysSinceLastMeal - conMod - baseTolerance, 0);
+
+// ✅ Cap at 6 (max limit)
+return Math.min(adjustedDays, 6);
 };
 /*--------------------------------------------------------------------
  Function to calculate the hungerIndex based on daysHungryForActor.
  -------------------------------------------------------------------*/
  export const hungerIndex = (actor) => {
-  if (!actor || typeof actor !== "object") {
-    return 0;
-  }
-  const daysHungry = daysHungryForActor(actor);
-  return Math.min(DEFAULT_HUNGER_LEVEL + daysHungry, HUNGER_LEVELS.length - 1);
+  if (!actor || typeof actor !== "object") return 0;
+
+  const daysWithoutFood = Math.ceil(daysHungryForActor(actor));
+  const rawIndex = DEFAULT_HUNGER_LEVEL + daysWithoutFood;
+
+  return Math.min(rawIndex, HUNGER_LEVEL.length - 1);
 };
 
 /*--------------------------------------------------------------------
  Function to calculate the hungerLevel (in words) based on hungerIndex.
  ---------------------------------------------------------------------*/
   export const hungerLevel = (actor) => {
-    const level = HUNGER_LEVELS[hungerIndex(actor)] || "unknown";
+    const level = HUNGER_LEVEL[hungerIndex(actor)] || "unknown";
     return game.i18n.localize(`${level}`);// added for chat issue
 };
 

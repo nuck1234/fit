@@ -102,15 +102,27 @@ const hungerEnabled = game.settings.get("fit", "hungerTracking");
 const thirstEnabled = game.settings.get("fit", "thirstTracking");
 const restEnabled = game.settings.get("fit", "restTracking");
 
-
-// ✅ Construct chat message
-let chatContent = `
-<div class='dnd5e chat-card'>
-    <!-- ✅ Header -->
-    <div class='card-header flexrow' style="align-items: center; text-align: center;">
-        <img src="modules/fit/templates/Icons/day-and-night.png" width="36" height="36">
-        <h3>${game.i18n.localize("fit.chat.another_day_passed")}</h3>            
-    </div>
+// Function to determine the terrain name
+function getTerrainName() {
+    const terrain = game.settings.get("fit", "terrain") || "normal";
+    const names = {
+      normal: "",
+      desert: " in the desert",
+      swamp: " in the swamp",
+      mountain: " in the mountains"
+    };
+    return names[terrain] || "";
+  }
+  
+  // ✅ Construct chat message
+  const terrainText = getTerrainName();
+  let chatContent = `
+  <div class='dnd5e chat-card'>
+      <!-- ✅ Header -->
+      <div class='card-header flexrow' style="align-items: center; text-align: left;">
+          <img src="modules/fit/templates/Icons/day-and-night.png" width="36" height="36">
+          <h3>${game.i18n.localize("fit.chat.another_day_passed")}${terrainText}.</h3>            
+      </div>
 
     <!-- ✅ Body -->
     <div class='card-content' style="text-align: left; font-family: 'Modesto Condensed', serif; font-size: 16px; font-weight: bold;">
