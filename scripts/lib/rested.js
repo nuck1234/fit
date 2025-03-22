@@ -1,6 +1,6 @@
 // This script includes logic to track rest, reset it after a long rest, and log relevant data.
 
-import { DEFAULT_REST_LEVEL, REST_LEVEL, } from './constants.js';// Ensure rest icons are imported for consistency
+import { DEFAULT_REST_LEVEL, REST_LEVEL, getTerrainMultipliers } from './constants.js';// Ensure rest icons are imported for consistency
 import { daysFromSeconds } from "./time.js"; // Utility functions to calculate time differences.
 
 
@@ -39,6 +39,12 @@ export const daysSinceLastRestForActor = (actor) => {
 
   let daysSinceLastRest = daysFromSeconds(elapsedTime);
   
+  // 🌍 Apply terrain-based thirst multiplier
+  const restMultiplier = getTerrainMultipliers().rest;
+  if (restMultiplier > 1) {
+    daysSinceLastRest *= restMultiplier;
+    console.log(`[fit] Terrain multiplier applied: ${restMultiplier}x rest for ${actor.name}`);
+  }
   
   // ✅ Apply Base Tolerance before capping
   let adjustedDays = Math.max(daysSinceLastRest - baseRest, 0);
@@ -49,12 +55,13 @@ export const daysSinceLastRestForActor = (actor) => {
 /*--------------------------------------------------------------------
  Function to calculate the restIndex based on daysSinceLastRestForActor.
  -------------------------------------------------------------------*/
-export const restIndex = (actor) => {
-  if (!actor || typeof actor !== "object") {
-    return 0;
-  }
-  const daysWithoutRest = daysSinceLastRestForActor(actor);
-  return Math.min(DEFAULT_REST_LEVEL + daysWithoutRest, REST_LEVEL.length - 1);
+ export const restIndex = (actor) => {
+  if (!actor || typeof actor !== "object") return 0;
+
+  const daysWithoutRest = Math.ceil(daysSinceLastRestForActor(actor));
+  const rawIndex = DEFAULT_REST_LEVEL + daysWithoutRest;
+
+  return Math.min(rawIndex, REST_LEVEL.length - 1);
 };
 
 /*--------------------------------------------------------------------

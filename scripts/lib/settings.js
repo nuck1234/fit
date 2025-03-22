@@ -83,6 +83,22 @@ await game.settings.register("fit", "baseThirst", {
   requiresReload: true
 });
 
+await game.settings.register("fit", "terrain", {
+  name: "Terrain Type",
+  hint: "Select the current terrain to apply environmental effects on hunger, thirst, and rest.",
+  scope: "world",
+  config: true,
+  type: String,
+  choices: {
+    normal: "Normal",
+    desert: "Desert (Hot & Dry)",
+    swamp: "Swamp (Hot & Humid)",
+    mountain: "Mountain (Cold & Thin Air)"
+  },
+  default: "normal",
+  requiresReload: true
+});
+
 await game.settings.register("fit", "hungerEffect", {
     name: "Enable Hunger additional effects",
     hint: "If enabled, hunger additional effects will be active reducing the Max Hit Points for every hunger level. Check to hunger effect.",
@@ -93,9 +109,8 @@ await game.settings.register("fit", "hungerEffect", {
     requiresReload: true
 })
 
-
-  // Register the name of the item to be treated as rations in the system.
-  await game.settings.register('fit', 'rationName', {
+ // Register the name of the item to be treated as rations in the system.
+await game.settings.register('fit', 'rationName', {
     name: "Ration Name",
     hint: "Use this item name for rations",
     scope: "world",

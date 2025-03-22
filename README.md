@@ -34,6 +34,12 @@ FIT updates actor states automatically, with configurable base thresholds for wh
   - Lower **Constitution scores** increase depletion rates.
 
 ---
+### **Environmental Effects**
+- **Desert environments** will increase the thirst and tiredness rate heat and lack of sleep at night.
+- **Mountain environments** will increase hunger rate (for warmth) and tiredness rate.
+- **Swamp** will will increase hunger and thirst rate due to the heat and humidity.
+
+---
 
 ## **Hunger, Thirst & Rest Effects**
 FIT applies progressive effects based on a character’s **deprivation level**:

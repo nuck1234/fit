@@ -1,8 +1,7 @@
 // This script includes logic to track thirst, reset it after a long thirst, and log relevant data.
 
-import { DEFAULT_THIRST_LEVEL, THIRST_LEVEL, } from './constants.js';// Ensure thirst icons are imported for consistency
+import { DEFAULT_THIRST_LEVEL, THIRST_LEVEL, getTerrainMultipliers } from './constants.js';// Ensure thirst icons are imported for consistency
 import { daysFromSeconds } from "./time.js"; // Utility functions to calculate time differences.
-import { updateExhaustion } from "./systems/dnd5e.js";
 
 /*-------------------------------------------------
 Initialize Thirst Tracking
@@ -39,8 +38,12 @@ export const daysSinceLastDrinkForActor = (actor) => {
 
   let daysSinceLastDrink = daysFromSeconds(elapsedTime);
   
-  
-
+// 🌍 Apply terrain-based thirst multiplier
+const thirstMultiplier = getTerrainMultipliers().thirst;
+if (thirstMultiplier > 1) {
+  daysSinceLastDrink *= thirstMultiplier;
+  console.log(`[fit] Terrain multiplier applied: ${thirstMultiplier}x thirst for ${actor.name}`);
+}
 
   // ✅ Apply Base Tolerance before capping
   let adjustedDays = Math.max(daysSinceLastDrink - baseThirst, 0);
@@ -55,8 +58,9 @@ export const thirstIndex = (actor) => {
   if (!actor || typeof actor !== "object") {
     return 0;
   }
-  const daysWithoutDrink = daysSinceLastDrinkForActor(actor);
-  return Math.min(DEFAULT_THIRST_LEVEL + daysWithoutDrink, THIRST_LEVEL.length - 1);
+  const daysWithoutDrink = Math.ceil(daysSinceLastDrinkForActor(actor));
+  const rawIndex = DEFAULT_THIRST_LEVEL + daysWithoutDrink;
+  return Math.min(rawIndex, THIRST_LEVEL.length - 1);
 };
 
 /*--------------------------------------------------------------------
