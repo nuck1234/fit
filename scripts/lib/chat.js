@@ -83,11 +83,11 @@ export async function sendHungerNotification(actor) {
   // ✅ Action buttons for eating and drinking
   const eatButton = rations && rations.system && rations.system.quantity > 0
       ? `<button data-action="consumeFood" data-actor-id="${actor.id}" data-item-id="${rations.id}">${localize('chat.eat')}</button>`
-      : `<span style="color: red;">${localize('chat.no_food')}</span>`;
+      : `<button style="color: red;">${localize('chat.no_food')}</button>`;
 
   const drinkButton = waterskin && waterskin.system && waterskin.system.quantity > 0
       ? `<button data-action="consumeDrink" data-actor-id="${actor.id}" data-item-id="${waterskin.id}">${localize('chat.drink')}</button>`
-      : `<span style="color: red;">${localize('chat.no_water')}</span>`;
+      : `<button style="color: red;">${localize('chat.no_water')}</button>`;
 
   const restButton = game.settings.get("fit", "restTracking") 
       ? `<button data-action="longRest" data-actor-id="${actor.id}">${localize('chat.rest')}</button>`

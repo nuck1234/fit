@@ -46,7 +46,7 @@ await game.settings.register("fit", "restTracking", {
     name: "Don't make missing players hungry",
     hint: "Skip evaluating hunger for any players who aren't logged in",
     scope: "world",
-    config: true,
+    config: flase,
     type: Boolean,
     default: true,
   })
