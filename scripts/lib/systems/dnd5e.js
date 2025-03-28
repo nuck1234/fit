@@ -219,15 +219,20 @@ Hooks.on("updateItem", async (item, change, diff, userId) => {
   console.log("Change Object:", change);
   console.groupEnd();
 
-  // ✅ Check if `uses.spent` exists and is greater than 0
-  const spent = foundry.utils.getProperty(item.system, "uses.spent") ?? 0;
-  const chargeUsed = spent >= 0; // Simply check if any charge is used
+  const prevUses = foundry.utils.getProperty(item._source, "system.uses.value");
+  const newUses = foundry.utils.getProperty(change, "system.uses.value");
 
-  console.log(`🔍 Uses spent: ${spent}, Charge Used? ${chargeUsed}`);
-
-  if (chargeUsed) {
-    console.log(`✅ [fit] Triggering ${isFood ? "consumeFood" : "consumeWater"} for ${actor.name}`);
-    if (isFood) await consumeFood(actor);
-    if (isWater) await consumeWater(actor);
+  if (typeof prevUses === 'number' && typeof newUses === 'number') {
+    if (newUses >= prevUses) return; // Only respond if uses went down
+    console.log(`🔍 Uses spent: ${prevUses - newUses}, Charge Used? ${newUses < prevUses}`);
+    if (isFood) {
+      console.log(`✅ [fit] Triggering consumeFood for ${actor.name}`);
+      await consumeFood(actor);
+    }
+    if (isWater) {
+      console.log(`✅ [fit] Triggering consumeWater for ${actor.name}`);
+      await consumeWater(actor);
+    }
   }
 });
+
