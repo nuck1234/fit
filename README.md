@@ -71,6 +71,7 @@ FIT is fully customizable to fit your campaign needs.
 - A **lower Constitution** Penalties will apply after 24 hours.
 
 
+
 ---
 ## **Terrain Options**
 
@@ -106,13 +107,6 @@ FIT applies **Exhaustion effects automatically** when deprivation reaches certai
 | **4** | Hit Point Maximum Halved | ✅ Yes |
 | **5** | Speed Reduced to 0 |  ✅ Yes |
 | **6** | Death |  ✅ Yes |
-
----
-Furture enhgancements
-### **Environmental Effects (Future Feature)**
-- **Desert environments** will increase thirst rate.
-- **Cold environments** may increase hunger rate (for warmth).
-- **High altitudes** could affect fatigue tracking.
 
 ---
 ## **
