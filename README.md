@@ -70,6 +70,14 @@ FIT is fully customizable to fit your campaign needs.
 - A **higher Constitution** score extends the time before hunger and thirst effects begin.
 - A **lower Constitution** Penalties will apply after 24 hours.
 
+## **Terrain Options**
+- The terain can be modified to provide strain on characters.
+| **Terrain Type** | **Hunger**               | **Thirst**               | **Rest**                | **Effect** |
+|-----------|--------------------------|--------------------------|-------------------------|------------|
+| **Desert** | No effect | Impacted | Impacted | x1.5 every 24 hours|
+| **Swamp** | Impacted | Impacted | No effect | x1.5 every 24 hours |
+| **Level 2** | Impacted | No effect | Impacted | x1.5 every 24 hours |
+
 ---
 
 ## **How to Consume Food & Water**
@@ -93,13 +101,6 @@ FIT applies **Exhaustion effects automatically** when deprivation reaches certai
 | **4** | Hit Point Maximum Halved | ✅ Yes |
 | **5** | Speed Reduced to 0 |  ✅ Yes |
 | **6** | Death |  ✅ Yes |
-
----
-Furture enhgancements
-### **Environmental Effects (Future Feature)**
-- **Desert environments** will increase thirst rate.
-- **Cold environments** may increase hunger rate (for warmth).
-- **High altitudes** could affect fatigue tracking.
 
 ---
 ## **
