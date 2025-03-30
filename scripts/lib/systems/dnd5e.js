@@ -210,8 +210,10 @@ Hooks.on("updateItem", async (item, change, diff, userId) => {
 
   const rationName = game.settings.get("fit", "rationName");
   const waterName = game.settings.get("fit", "waterName");
+
   const isFood = item.name === rationName;
   const isWater = item.name === waterName;
+
   if (!isFood && !isWater) return;
 
   console.group(`🧪 [fit] updateItem DETECTED for ${item.name} (Actor: ${actor.name})`);
@@ -219,20 +221,15 @@ Hooks.on("updateItem", async (item, change, diff, userId) => {
   console.log("Change Object:", change);
   console.groupEnd();
 
-  const prevUses = foundry.utils.getProperty(item._source, "system.uses.value");
-  const newUses = foundry.utils.getProperty(change, "system.uses.value");
+  if (isFood) {
+    console.log(`✅ [fit] Detected Ration use. Running consumeFood for ${actor.name}`);
+    await consumeFood(actor);
+  }
 
-  if (typeof prevUses === 'number' && typeof newUses === 'number') {
-    if (newUses >= prevUses) return; // Only respond if uses went down
-    console.log(`🔍 Uses spent: ${prevUses - newUses}, Charge Used? ${newUses < prevUses}`);
-    if (isFood) {
-      console.log(`✅ [fit] Triggering consumeFood for ${actor.name}`);
-      await consumeFood(actor);
-    }
-    if (isWater) {
-      console.log(`✅ [fit] Triggering consumeWater for ${actor.name}`);
-      await consumeWater(actor);
-    }
+  if (isWater) {
+    console.log(`✅ [fit] Detected Water use. Running consumeWater for ${actor.name}`);
+    await consumeWater(actor);
   }
 });
+
 
