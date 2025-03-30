@@ -70,13 +70,19 @@ FIT is fully customizable to fit your campaign needs.
 - A **higher Constitution** score extends the time before hunger and thirst effects begin.
 - A **lower Constitution** Penalties will apply after 24 hours.
 
+
+
+---
 ## **Terrain Options**
-- The terain can be modified to provide strain on characters.
-| **Terrain Type** | **Hunger**               | **Thirst**               | **Rest**                | **Effect** |
-|-----------|--------------------------|--------------------------|-------------------------|------------|
-| **Desert** | No effect | Impacted | Impacted | x1.5 every 24 hours|
-| **Swamp** | Impacted | Impacted | No effect | x1.5 every 24 hours |
-| **Level 2** | Impacted | No effect | Impacted | x1.5 every 24 hours |
+
+The terrain can be modified to provide strain on characters.
+
+| **Terrain Type** | **Hunger**   | **Thirst**   | **Rest**    | **Effect**              |
+|------------------|--------------|--------------|-------------|--------------------------|
+| **Desert**       | No effect    | Impacted     | Impacted    | x1.5 every 24 hours      |
+| **Swamp**        | Impacted     | Impacted     | No effect   | x1.5 every 24 hours      |
+| **Mountains**    | Impacted     | No effect    | Impacted    | x1.5 every 24 hours      |
+
 
 ---
 
