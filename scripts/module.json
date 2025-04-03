@@ -1,11 +1,12 @@
 {
   "id": "fit",
+  "name": "fit",
   "title": "Fit Module - Hunger, Thirst, Rest",
   "description": "A survival tracking system for Foundry VTT that manages hunger, thirst, and rest.",
   "version": "1.0.0",
   "authors": [
     {
-      "name": "Richard Taylor",
+      "name": "nuck",
       "url": "https://github.com/nuck1234/fit",
       "discord": "nuck#0410"
         
@@ -32,8 +33,8 @@
   ],
 
   "url": "https://github.com/nuck1234/fit",
-  "manifest": "https://github.com/nuck1234/fit/releases/latest/download/module.json",
-  "download": "https://github.com/nuck1234/fit/releases/latest/download/module.zip",
+  "manifest": "https://github.com/nuck1234/fit/releases/download/v1.0.0/module.json",
+  "download": "https://github.com/nuck1234/fit/releases/download/v1.0.0/module.zip",
   
   "relationships": {
     "requires": [
