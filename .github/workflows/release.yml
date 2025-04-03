@@ -1,0 +1,18 @@
+name: Notify FoundryVTT of New Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  notify-foundry:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Foundry of new release
+        run: |
+          curl -X POST https://api.foundryvtt.com/_api/packages/release \
+          -H "Authorization: Bearer ${{ secrets.FOUNDRY_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "manifest": "https://github.com/nuck1234/fit/releases/latest/download/module.json"
+          }'
