@@ -16,7 +16,7 @@ Hooks.once('init', async () => {
 
 // ✅ Ensure module hooks only run when the system is enabled
 Hooks.once("ready", () => {
-  console.log("fit | System Ready");
+  //console.log("fit | System Ready");
 
   if (!game.settings.get("fit", "enabled")) return;
 
@@ -62,7 +62,6 @@ Setup Foundry Hooks
 function setupHooks() {
  
   if (!game.settings.get("fit", "enabled")) {
-    console.log("fit | Hooks disabled.");
     return;
   }
 
@@ -76,7 +75,7 @@ Hooks.on("createActor", async (actor) => {
   if (!game.settings.get("fit", "enabled")) return;
   if (actor.type !== "character") return; // ✅ Only apply to player characters
 
-  console.log(`✅ New character created: ${actor.name} - Initializing Hunger Thirst & Rest`);
+  //console.log(`✅ New character created: ${actor.name} - Initializing Hunger Thirst & Rest`);
 
   // ✅ Set up hunger and rest when the actor is first created
   await initializeHunger(actor);
@@ -96,7 +95,7 @@ Token Event Handler
       if (!actor || !actor.hasPlayerOwner) return;
 
       const currentTime = game.time.worldTime;
-      console.log(`✅ Token created for ${actor.name} - Restoring Hunger & Rest Tracking`);
+      //console.log(`✅ Token created for ${actor.name} - Restoring Hunger & Rest Tracking`);
 
       // ✅ Restore stored hunger state
       if (game.settings.get("fit", "hungerTracking")) {
@@ -104,7 +103,7 @@ Token Event Handler
           await actor.setFlag('fit', 'lastMealAt', currentTime - elapsedHungerTime);
           await actor.unsetFlag('fit', 'hungerElapsedTime');
 
-          console.log(`${actor.name} - 🍽️ Restored lastMealAt to: ${currentTime - elapsedHungerTime}`);
+          //console.log(`${actor.name} - 🍽️ Restored lastMealAt to: ${currentTime - elapsedHungerTime}`);
 
           // ✅ Apply tracking function to ensure hunger updates
           await trackHunger(actor);
@@ -116,7 +115,7 @@ Token Event Handler
         await actor.setFlag('fit', 'lastDrinkAt', currentTime - elapsedThirstTime);
         await actor.unsetFlag('fit', 'thirstElapsedTime');
 
-        console.log(`${actor.name} - 🍽️ Restored lastDrinkAt to: ${currentTime - elapsedThirstTime}`);
+        //console.log(`${actor.name} - 🍽️ Restored lastDrinkAt to: ${currentTime - elapsedThirstTime}`);
 
         // ✅ Apply tracking function to ensure thirst updates
         await trackThirst(actor);
@@ -128,7 +127,7 @@ Token Event Handler
           await actor.setFlag('fit', 'lastRestAt', currentTime - elapsedRestTime);
           await actor.unsetFlag('fit', 'restElapsedTime');
 
-          console.log(`${actor.name} - 💤 Restored lastRestAt to: ${currentTime - elapsedRestTime}`);
+          //console.log(`${actor.name} - 💤 Restored lastRestAt to: ${currentTime - elapsedRestTime}`);
 
           // ✅ Apply tracking function to ensure rest updates
           await trackRest(actor);
@@ -144,7 +143,7 @@ Hooks.on('preDeleteToken', async (document) => {
   if (!actor || !actor.hasPlayerOwner) return;
 
   const currentTime = game.time.worldTime;
-  console.log(`🛑 Token deleted for ${actor.name} - Storing Off-Canvas Data`);
+  //console.log(`🛑 Token deleted for ${actor.name} - Storing Off-Canvas Data`);
 
   // ✅ Store elapsed hunger time (same logic as rest)
   if (game.settings.get("fit", "hungerTracking")) {
@@ -152,7 +151,7 @@ Hooks.on('preDeleteToken', async (document) => {
     const elapsedHungerTime = currentTime - lastMealAt;
     await actor.setFlag('fit', 'hungerElapsedTime', elapsedHungerTime);
     
-    console.log(`${actor.name} - 🍽️ Stored hunger elapsed time: ${elapsedHungerTime} seconds`);
+    //console.log(`${actor.name} - 🍽️ Stored hunger elapsed time: ${elapsedHungerTime} seconds`);
   }
 
   // ✅ Store elapsed thirst time (same logic as rest)
@@ -161,7 +160,7 @@ Hooks.on('preDeleteToken', async (document) => {
     const elapsedThirstTime = currentTime - lastDrinkAt;
     await actor.setFlag('fit', 'thirstElapsedTime', elapsedThirstTime);
     
-    console.log(`${actor.name} - 🍽️ Stored thirst elapsed time: ${elapsedThirstTime} seconds`);
+    //console.log(`${actor.name} - 🍽️ Stored thirst elapsed time: ${elapsedThirstTime} seconds`);
   }  
 
   // ✅ Store elapsed rest time
@@ -170,7 +169,7 @@ Hooks.on('preDeleteToken', async (document) => {
     const elapsedRestTime = currentTime - lastRestAt;
     await actor.setFlag('fit', 'restElapsedTime', elapsedRestTime);
     
-    console.log(`${actor.name} - 💤 Stored rest elapsed time: ${elapsedRestTime} seconds`);
+   // console.log(`${actor.name} - 💤 Stored rest elapsed time: ${elapsedRestTime} seconds`);
   }
 });
     
@@ -220,3 +219,117 @@ Hooks.on('updateWorldTime', async (seconds, elapsed) => {
         }
     });
 });
+
+    /*-------------------------------------------------
+    Auto-configure Consumables
+    ---------------------------------------------------*/
+
+    // ✅ Register Fit setting to auto-configure consumables
+    Hooks.once("init", () => {
+      game.settings.register("fit", "autoConfigureConsumables", {
+        name: "Auto-configure consumables",
+        hint: "Automatically set activation and consumption data on Rations and Waterskins when used.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true
+      });
+    });
+    
+    /*-------------------------------------------------
+    Auto-patch Waterskin and Rations
+    ---------------------------------------------------*/
+    // ✅ Auto-patch Waterskin and Rations to ensure item.use() works (Argon compatible)
+    Hooks.once("ready", async () => {
+      if (!game.settings.get("fit", "autoConfigureConsumables")) return;
+    
+      const rationName = game.settings.get("fit", "rationName")?.toLowerCase();
+      const waterName = game.settings.get("fit", "waterName")?.toLowerCase();
+    
+      // 🛠 Patch existing items on actor sheets proactively
+      for (const actor of game.actors.contents) {
+        for (const item of actor.items.contents) {
+          const itemName = item.name.toLowerCase();
+          if (![rationName, waterName].includes(itemName)) continue;
+    
+          const consumptionTarget = item.id;
+          const consumptionType = "itemUses";
+    
+          const needsPatch = !item.system.activation?.type ||
+                             item.system.consumption?.target !== consumptionTarget ||
+                             !item.system.activities?.use;
+    
+          if (!needsPatch) continue;
+    
+          //console.log(`[fit] Auto-patching ${item.name} on ${actor.name}`);
+    
+          await item.update({
+            "system.activation.type": "action",
+            "system.consumption.type": consumptionType,
+            "system.consumption.amount": 1,
+            "system.consumption.target": consumptionTarget,
+            "system.consume": {
+              "type": "charges",
+              "amount": 1
+            },
+            "system.activities.use": {
+              "activation": { "type": "action", "cost": 1 },
+              "consumption": {
+                "type": consumptionType,
+                "amount": 1,
+                "target": consumptionTarget
+              }
+            }
+          });
+    
+          if (game.user.isGM) {
+            ui.notifications.info(`[fit] ${item.name} was auto-configured for ${actor.name}.`);
+          }
+        }
+      }
+    
+      // 🪝 Also patch items when they're used (for late-added actors)
+      Hooks.on("preUseItem", async (item, config, options) => {
+        const actor = item.actor;
+        if (!actor) return;
+    
+        const itemName = item.name.toLowerCase();
+        if (![rationName, waterName].includes(itemName)) return;
+    
+        const consumptionTarget = item.id;
+        const consumptionType = "itemUses";
+    
+        const needsPatch = !item.system.activation?.type ||
+                           item.system.consumption?.target !== consumptionTarget ||
+                           !item.system.activities?.use;
+    
+        if (!needsPatch) return;
+    
+        //console.log(`[fit] Auto-patching ${item.name} to support proper consumption and activity usage.`);
+    
+        await item.update({
+          "system.activation.type": "action",
+          "system.consumption.type": consumptionType,
+          "system.consumption.amount": 1,
+          "system.consumption.target": consumptionTarget,
+          "system.consume": {
+            "type": "charges",
+            "amount": 1
+          },
+          "system.activities.use": {
+            "activation": { "type": "action", "cost": 1 },
+            "consumption": {
+              "type": consumptionType,
+              "amount": 1,
+              "target": consumptionTarget
+            }
+          }
+        });
+    
+        if (game.user.isGM) {
+          ui.notifications.info(`[fit] ${item.name} was auto-configured for usage.`);
+        }
+      });
+    });
+    
+    

@@ -43,7 +43,7 @@ export const daysHungryForActor = (actor) => {
 const hungerMultiplier = getTerrainMultipliers().hunger;
 if (hungerMultiplier > 1) {
   daysSinceLastMeal *= hungerMultiplier;
-  console.log(`[fit] Terrain multiplier applied: ${hungerMultiplier}x hunger for ${actor.name}`);
+ // console.log(`[fit] Terrain multiplier applied: ${hungerMultiplier}x hunger for ${actor.name}`);
 }
 
 // ✅ Apply Constitution Modifier
@@ -130,7 +130,11 @@ Hooks.once("ready", () => {
   if (fitModule) {
     fitModule.api = fitModule.api || {};
     Object.assign(fitModule.api, {
-      resetHungerAfterMeal: resetHungerAfterMeal // ✅ Calls function directly
+      resetHungerAfterMeal,
+      trackHunger,
+      consumeFood,
+      daysHungryForActor,
+      setLastMealTime
     });
   }
 });
@@ -186,6 +190,7 @@ export const addOrUpdateHungerEffect = async (actor, activeEffectConfig) => {
 export const consumeFood = async (actor) => {
   await removeHungerEffects(actor);
   await resetHungerAfterMeal(actor); // ✅ Now matches rest
+  await trackHunger(actor); // ✅ Actually recalculates and stores hungerLevel
 
   Hooks.call('consumeFood', actor);
 
