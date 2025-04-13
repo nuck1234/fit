@@ -42,7 +42,7 @@ export const daysSinceLastDrinkForActor = (actor) => {
 const thirstMultiplier = getTerrainMultipliers().thirst;
 if (thirstMultiplier > 1) {
   daysSinceLastDrink *= thirstMultiplier;
-  console.log(`[fit] Terrain multiplier applied: ${thirstMultiplier}x thirst for ${actor.name}`);
+  //console.log(`[fit] Terrain multiplier applied: ${thirstMultiplier}x thirst for ${actor.name}`);
 }
 
   // ✅ Apply Base Tolerance before capping
@@ -126,7 +126,10 @@ Hooks.once("ready", () => {
   if (fitModule) {
     fitModule.api = fitModule.api || {};
     Object.assign(fitModule.api, {
-      resetThirstAfterDrink: resetThirstAfterDrink // ✅ Calls function directly
+      consumeWater,
+      trackThirst,
+      resetThirstAfterDrink,       // if you have this
+      daysSinceLastDrinkForActor   // optional helper
     });
   }
 });
@@ -149,6 +152,7 @@ export async function resetThirstAfterDrink(actor) {
  ---------------------------------------------------------------------*/
 export const consumeWater = async (actor) => {
   await resetThirstAfterDrink(actor); // ✅ Now matches rest
+  await trackThirst(actor); // ✅ Actually recalculates and stores hungerLevel
 
   Hooks.call('consumeWater', actor);
 

@@ -192,64 +192,70 @@ export function sendHungerNotification(actor) {
 }
 
 
-// Hook to handle custom chat interactions for consuming food and water
+// Hook to handle custom chat interactions for consuming food and drink
 Hooks.on('renderChatLog', async (app, html, data) => {
-  html.on('click', "button[data-action='consumeFood']", async (event) => {
-    event.preventDefault();
-    const actor = game.actors.get(event.target.dataset.actorId);
-    const item = actor?.items.get(event.target.dataset.itemId);
-    if (!actor || !item) return ui.notifications.warn(`${actor?.name ?? 'This character'} has no food to eat.`);
+ 
+ //Food button click
+html.on('click', "button[data-action='consumeFood']", async (event) => {
+  event.preventDefault();
 
-    const quantity = item.system.quantity ?? 0;
-    if (quantity <= 0) {
-      ui.notifications.warn(`${actor.name} has no ${item.name} left to eat.`);
-      return;
-    }
+  const actor = game.actors.get(event.target.dataset.actorId);
+  const item = actor?.items.get(event.target.dataset.itemId);
+  if (!actor || !item) return ui.notifications.warn(`${actor?.name ?? 'This character'} has no food to eat.`);
 
-    console.log(`[fit] ${actor.name} eating ${item.name}`);
-    await item.use({ legacy: false, configureDialog: false });
-    await actor.setFlag('fit', 'lastMealAt', game.time.worldTime);
+  const result = await item.use({ event, legacy: false }, { event });
+
+  if (result !== false) {
+    await game.modules.get("fit").api.consumeFood(actor);
+
     if (game.settings.get("fit", "confirmChat")) {
       ChatMessage.create({ content: `${actor.name} eats ${item.name}. Hunger reset.` });
     }
-    updateExhaustion(actor);
-  });
 
+    if (actor.sheet?.rendered) actor.sheet.render(true);
+   // item.sheet?.render(true);
+  }
+});
+
+  
+  // Drink button click
   html.on('click', "button[data-action='consumeDrink']", async (event) => {
     event.preventDefault();
+  
     const actor = game.actors.get(event.target.dataset.actorId);
-    const item = actor?.items.get(event.target.dataset.itemId);
+    if (!actor) {
+      ui.notifications.warn("⚠️ Actor not found. They may have been deleted.");
+      return;
+    }
   
-    if (!actor) return ui.notifications.error("Actor not found.");
+    const item = actor.items.get(event.target.dataset.itemId);
     if (!item) {
-      ui.notifications.warn(`${actor.name} has no water item to drink.`);
+      const waterName = game.settings.get("fit", "waterName");
+      ui.notifications.warn(`${actor.name} has no ${waterName} to drink.`);
       return;
     }
   
-    const uses = item.system.uses?.value ?? 0;
-    const quantity = item.system.quantity ?? 0;
-    if (uses <= 0 && quantity <= 0) {
-      ui.notifications.warn(`${actor.name} has no ${item.name} left to drink.`);
-      return;
-    }
-  
-    console.log(`[fit] ${actor.name} drinking ${item.name}`);
-    const result = await item.use({ legacy: false, configureDialog: false });
+    const result = await item.use({ event, legacy: false }, { event });
   
     if (result !== false) {
-      await actor.setFlag('fit', 'lastDrinkAt', game.time.worldTime);
+      await actor.setFlag("fit", "lastDrinkAt", game.time.worldTime);
+  
       if (game.settings.get("fit", "confirmChat")) {
-        ChatMessage.create({ content: `${actor.name} drinks ${item.name}. Thirst reset.` });
+        ChatMessage.create({ content: `${actor.name} drinks from ${item.name}. Thirst reset.` });
       }
+  
       updateExhaustion(actor);
+      //actor.sheet?.render(true);
+     // item.sheet?.render(true);
     }
   });
+
 
   html.on('click', "button[data-action='longRest']", async (event) => {
     event.preventDefault();
     const actor = game.actors.get(event.target.dataset.actorId);
     if (!actor) return ui.notifications.error("Actor not found.");
-    console.log(`${actor.name} - Triggering Long Rest`);
+   // console.log(`${actor.name} - Triggering Long Rest`);
     await actor.longRest();
     ui.notifications.info(`${actor.name} has taken a long rest.`);
     updateExhaustion(actor);

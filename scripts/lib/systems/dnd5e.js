@@ -13,7 +13,7 @@ import { consumeWater, thirstLevel,daysSinceLastDrinkForActor,thirstIndex } from
 ========================= */
 
 /*----------------------------------------------------
-Function updateCharacterSheet to track hunger and rest
+Function Legacy updateCharacterSheet to track hunger and rest
 -----------------------------------------------------*/
 function updateCharacterSheet(app, html, sheet) {
   // ✅ Check if the module is enabled
@@ -60,9 +60,151 @@ Hooks.once('ready', () => {
       updateCharacterSheet(app, html, sheet); // ✅ Add Hunger and Rest lines without modifying exhaustion
   });
 });
-  
 
-    
+/*----------------------------------------------------
+Function "Default" updateCharacterSheet to track hunger and rest
+-----------------------------------------------------*/
+Hooks.on("renderActorSheet5eCharacter2", (app, html, sheet) => {
+  if (!game.settings.get("fit", "enabled")) return;
+  //console.log("[fit] Injecting Survival heading into Effects tab...");
+
+  setTimeout(() => {
+    const actor = app.actor || sheet.actor;
+    if (!actor) {
+      console.warn("[fit] No actor found.");
+      return;
+    }
+
+    const hungerEnabled = game.settings.get("fit", "hungerTracking");
+    const thirstEnabled = game.settings.get("fit", "thirstTracking");
+    const restEnabled = game.settings.get("fit", "restTracking");
+
+    if (!hungerEnabled && !thirstEnabled && !restEnabled) return;
+
+    const effectsTab = html.find(`.tab[data-tab="effects"]`);
+    if (!effectsTab.length) {
+      console.warn("[fit] Could not find Effects tab.");
+      return;
+    }
+
+    if (effectsTab.find(".fit-survival-header").length > 0) return;
+
+    const terrain = game.settings.get("fit", "terrain") || "Unknown";
+
+    const hunger = hungerLevel(actor) || "Unknown";
+    const rationItem = actor.items.find(i => i.name === game.settings.get('fit', 'rationName'));
+    const hungerVictual = rationItem?.name || "Unknown";
+    const hungerQty = rationItem?.system?.quantity ?? 0;
+    const hungerCharges = rationItem?.system?.uses?.value ?? 0;
+
+    const thirst = thirstLevel(actor) || "Unknown";
+    const waterItem = actor.items.find(i => i.name === game.settings.get('fit', 'waterName'));
+    const thirstVictual = waterItem?.name || "Unknown";
+    const thirstQty = waterItem?.system?.quantity ?? 0;
+    const thirstCharges = waterItem?.system?.uses?.value ?? 0;
+
+    const htmlToInject = `
+      <section class="items-list fit-survival-header">
+        <div class="fit-survival" style="margin-top: 1rem;">
+          <div class="items-section card">
+            <div class="items-header header">
+              <h3 class="item-name"><i class="fas fa-leaf"></i> Survival Needs</h3>
+            </div>
+            <ul class="item-list"></ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="items-list fit-survival-header">
+        <div class="fit-survival" style="margin-top: 1rem;">
+          <div class="items-section card">
+            <div class="items-header header" style="
+              display: grid;
+              grid-template-columns: 3fr 3fr 2fr 1fr 1fr 1fr;
+              align-items: center;
+              font-size: 0.75em;
+            ">
+              <h3 class="item-name" style="margin: 0;">
+                <i class="fas fa-leaf"></i> Condition
+              </h3>
+              <div style="padding-left: 1rem;">STATUS</div>
+              <div style="text-align: left;">VICTUAL TYPE</div>
+              <div style="text-align: center;">QUANTITY</div>
+              <div style="text-align: center;">CHARGES</div>
+              <div style="text-align: center;">REFILL</div>
+            </div>
+
+            <ul class="item-list">
+              ${hungerEnabled ? `
+                <li class="item" style="display: grid; grid-template-columns: 3fr 3fr 2fr 1fr 1fr 1fr; padding: 0.5em 1em; border-top: 1px solid var(--dnd5e-color-faint);">
+                  <div>Hunger</div>
+                  <div>${hunger}</div>
+                  <div>${hungerVictual}</div>
+                  <div style="text-align: center;">${hungerQty}</div>
+                  <div style="text-align: center;">${hungerCharges}</div>
+                  <div style="text-align: center;">-</div>
+                </li>
+              ` : ''}
+
+              ${thirstEnabled ? `
+                <li class="item" style="display: grid; grid-template-columns: 3fr 3fr 2fr 1fr 1fr 1fr; align-items: center; padding: 0.5em 1em; border-top: 1px solid var(--dnd5e-color-faint);">
+                  <div>Thirst</div>
+                  <div>${thirst}</div>
+                  <div>${thirstVictual}</div>
+                  <div style="text-align: center;">${thirstQty}</div>
+                  <div style="text-align: center;">${thirstCharges}</div>       
+                  <div style="text-align: center;"> <button class="fit-refill-water" data-actor-id="${actor.id}" title="Refill water">↺</button>
+                  </div>
+                </li>
+              ` : ''}
+
+              ${restEnabled ? `
+                <li class="item" style="display: grid; grid-template-columns: 3fr 3fr 2fr 1fr 1fr 1fr; padding: 0.5em 1em; border-top: 1px solid var(--dnd5e-color-faint);">
+                  <div>Rest</div>
+                  <div>${restLevel(actor)}</div>
+                  <div>Long Rest</div>
+                  <div style="text-align: center;">-</div>
+                  <div style="text-align: center;">-</div>
+                  <div style="text-align: center;">-</div>
+                </li>
+              ` : ''}
+            </ul>
+          </div>
+        </div>
+      </section>
+    `;
+
+    effectsTab.append(htmlToInject);
+    //console.log("[fit] ✅ Injected Survival Needs header with terrain row.");
+
+    // ✅ Attach Refill button handler
+    html.find('.fit-refill-water').on('click', async (event) => {
+      event.preventDefault();
+      const actorId = event.currentTarget.dataset.actorId;
+      const actor = game.actors.get(actorId);
+      if (!actor) return;
+
+      const waterName = game.settings.get('fit', 'waterName');
+      const waterskin = actor.items.getName(waterName);
+      if (!waterskin) {
+        ui.notifications.warn(`${actor.name} has no ${waterName} to refill.`);
+        return;
+      }
+
+      await waterskin.update({
+        "system.uses.value": waterskin.system.uses.max,
+        "system.uses.spent": 0
+      });
+
+      ui.notifications.info(`${actor.name}'s ${waterskin.name} has been refilled.`);
+      actor.sheet.render(true);
+    });
+
+  }, 0);
+});
+
+
+  
 
     /*-------------------------------------------------
     EFFECTS
@@ -216,18 +358,18 @@ Hooks.on("updateItem", async (item, change, diff, userId) => {
 
   if (!isFood && !isWater) return;
 
-  console.group(`🧪 [fit] updateItem DETECTED for ${item.name} (Actor: ${actor.name})`);
-  console.log("Item:", item);
-  console.log("Change Object:", change);
-  console.groupEnd();
+  //console.group(`🧪 [fit] updateItem DETECTED for ${item.name} (Actor: ${actor.name})`);
+  //console.log("Item:", item);
+  //console.log("Change Object:", change);
+  //console.groupEnd();
 
   if (isFood) {
-    console.log(`✅ [fit] Detected Ration use. Running consumeFood for ${actor.name}`);
+    //console.log(`✅ [fit] Detected Ration use. Running consumeFood for ${actor.name}`);
     await consumeFood(actor);
   }
 
   if (isWater) {
-    console.log(`✅ [fit] Detected Water use. Running consumeWater for ${actor.name}`);
+    //console.log(`✅ [fit] Detected Water use. Running consumeWater for ${actor.name}`);
     await consumeWater(actor);
   }
 });

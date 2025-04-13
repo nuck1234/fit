@@ -43,7 +43,7 @@ export const daysSinceLastRestForActor = (actor) => {
   const restMultiplier = getTerrainMultipliers().rest;
   if (restMultiplier > 1) {
     daysSinceLastRest *= restMultiplier;
-    console.log(`[fit] Terrain multiplier applied: ${restMultiplier}x rest for ${actor.name}`);
+   // console.log(`[fit] Terrain multiplier applied: ${restMultiplier}x rest for ${actor.name}`);
   }
   
   // ✅ Apply Base Tolerance before capping
