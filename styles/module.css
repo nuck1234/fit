@@ -2,4 +2,132 @@
  * MODULE.CSS
   */
 
+  .fit-item-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 64px;
+    margin-left: 1.5rem;
+  }
   
+  .fit-item-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Prevents stretching */
+    border: 1px solid #000;
+    border-radius: 5px;
+  }
+  
+  .fit-item-charges {
+    position: absolute;
+    top: 0;
+    left: 2px;
+    background: rgba(85, 107, 128, 0.85);
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+    padding: 1px 5px;
+    border-bottom-right-radius: 6px;
+  }
+  
+  .fit-item-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 8px;
+    color: white;
+    background: rgba(0, 0, 0, 0.5);
+    padding-bottom: 2px;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+  }
+/* Tooltip container */
+.fit-item-tooltip {
+  position: absolute;
+  left: -260px; /* Position to the left of the icon */
+  top: 50%;
+  transform: translateY(-50%);
+  width: 240px;
+  background-color: rgba(85, 107, 128, 0.85); /* Tooltip background */
+  color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 50;
+}
+
+/* SHOW ON HOVER */
+.fit-item-icon:hover .fit-item-tooltip {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* TITLE ROW */
+.fit-item-tooltip-title {
+  background-color: white;
+  color: black;
+  font-weight: bold;
+  font-size: 1.1em;
+  text-align: center;
+  padding: 6px 8px;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+/* BODY */
+.fit-item-tooltip .tooltip-body {
+  background-color: rgba(85, 107, 128, 0.85); /* your requested blue-gray */
+  color: black;
+  padding: 0.75em 1em;
+  font-size: 0.95em;
+  line-height: 1.4;
+}
+
+
+.fit-item-tooltip-body {
+  padding: 8px 10px;
+  font-size: 0.95em;
+}
+
+/* Image hover highlight */
+.fit-item-icon img:hover {
+  filter: brightness(1.3) saturate(1.2);
+  transform: scale(1.05);
+  /*box-shadow: 0 0 10px 3px rgba(0, 200, 255, 0.4);*/
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+/* Text label over the image */
+.fit-item-label {
+  position: absolute;
+  bottom: 4px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-weight: bold;
+  font-size: 0.85em;
+  color: white;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 4px;
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
+  transition: filter 0.2s ease, text-shadow 0.2s ease;
+}
+
+/* Make the label text pop on hover */
+.fit-item-icon:hover .fit-item-label {
+  filter: brightness(1.5);
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.7);
+}
+.fit-item-icon.terrain {
+  background-color: #111;
+  padding: 4px;
+  border-radius: 4px;
+}
