@@ -282,9 +282,9 @@ Hooks.on('updateWorldTime', async (seconds, elapsed) => {
             }
           });
     
-          if (game.user.isGM) {
-            ui.notifications.info(`[fit] ${item.name} was auto-configured for ${actor.name}.`);
-          }
+          //if (game.user.isGM) {
+           // ui.notifications.info(`[fit] ${item.name} was auto-configured for ${actor.name}.`);
+         // }
         }
       }
     

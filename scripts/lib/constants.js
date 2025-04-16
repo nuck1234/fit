@@ -167,3 +167,32 @@ export function getTerrainMultipliers() {
 
   return multipliers[terrain] || multipliers.normal;
 }
+export const terrainData = {
+  normal: {
+    name: "Normal Terrain",
+    label: "Normal",  // 👈 This is used under the icon
+    icon: "modules/fit/templates/icons/normal.png",
+    description: "Traversing through typical landscapes such as forests, grasslands, or rolling hills presents a balanced set of challenges regarding survival. <p>Food and potable water sources are generally available with reasonable effort, and the climate is usually temperate, allowing for relatively comfortable rest. <p>The impact of not securing sufficient food, water, or rest is felt at a standard rate. <p>Every 24 hours without adequate sustenance or rest will lead to a gradual increase in fatigue, as one would naturally expect from prolonged exertion and lack of basic needs being met. <p>This environment doesn't inherently amplify the effects of deprivation in any specific area, making survival a matter of consistent effort rather than overcoming extreme environmental pressures."
+    .trim()
+  },
+  desert: {
+    name: "Desert (Hot & Dry)",
+    label: "Desert",  // 👈 This is used under the icon
+    icon: "modules/fit/templates/icons/Desert.png",
+    description: "The scorching sun beats down on the endless expanse of sand, making the days brutally hot. While food may be scarce but doesn't inherently worsen your hunger, the intense heat drastically accelerates dehydration. <p> Without sufficient water intake, the effects of thirst are amplified, making its impact felt more severely every 24 hours. <p> As night falls, the temperature plummets, often to frigid levels. This dramatic shift makes finding comfortable and restful sleep challenging, impacting your ability to recover. <p>The combination of amplified thirst and disrupted rest in this harsh environment means that without proper sustenance and respite, exhaustion will accumulate rapidly."
+
+
+  },
+  swamp: {
+    name: "Swamp (Hot & Humid)",
+    label: "Swamp",  // 👈 This is used under the icon
+    icon: "modules/fit/templates/icons/Jungle.png",
+    description: "The humid, stagnant air of the swamp hangs heavy, thick with the smell of decay and buzzing insects. While the environment itself doesn't directly worsen your thirst, the difficulty in finding clean and uncontaminated food sources means that hunger takes its toll more quickly. <p> The constant dampness and uneven terrain make foraging inefficient, amplifying the impact of not finding enough to eat every 24 hours. <p> However, the relatively stable and often humid temperatures, even at night, do not typically hinder rest. <p>Despite the discomfort, finding a place to settle for a long rest is generally easier than in more extreme environments. The primary threat in the swamp comes from the accelerated hunger combined with the constant energy expenditure of navigating the treacherous terrain, leading to a quicker onset of exhaustion if food is scarce."
+  },
+  mountain: {
+    name: "Mountain (Cold & Thin Air)",
+    label: "Mountain",  // 👈 This is used under the icon
+    icon: "modules/fit/templates/icons/Mountain.png",
+    description: "The towering peaks and jagged cliffs of the mountains present a different set of challenges. While fresh water sources may be found in streams and snowmelt, the thin air and strenuous exertion of climbing and navigating the steep slopes significantly increase your body's need for sustenance. <p>Finding enough food in this rugged terrain is difficult, amplifying the impact of hunger every 24 hours. <p>Furthermore, the exposed and often windy conditions, coupled with the cold nights at higher altitudes, make finding adequate shelter for rest a constant struggle. <p>The lack of proper rest further exacerbates the effects of the demanding physical activity. <p>In the mountains, the combination of amplified hunger due to the environment and disrupted rest due to the harsh conditions will lead to a rapid accumulation of exhaustion if resources are not carefully managed."
+  }
+}
