@@ -7,7 +7,7 @@ import { hungerChatMessage, sendHungerNotification } from "../chat.js"; // Funct
 import { hungerLevel, hungerIcon, addOrUpdateHungerEffect, removeHungerEffects, daysHungryForActor, consumeFood,hungerIndex } from "../hunger.js"; // Functions and utilities for managing hunger levels and effects.
 import { resetRestAfterRest, restIndex, restLevel } from "../rested.js"; // Function to set the last rest timestamp for an actor.
 import { consumeWater, thirstLevel,thirstIndex } from "../thirst.js"; // Function to set the last rest timestamp for an actor.
-import { terrainData } from "../constants.js";
+import { terrainData, exhaustionData } from "../constants.js";
 
 
 
@@ -120,12 +120,18 @@ Hooks.on("renderActorSheet5eCharacter2", (app, html, sheet) => {
   
     const terrainKey = game.settings.get("fit", "terrain") || "normal";
     const terrain = terrainData[terrainKey];
-
     const terrainName = terrain.name;
     const terrainIcon = terrain.icon;
     const terrainDescription = await TextEditor.enrichHTML(terrain.description, { async: true });
 
+    const exhaustionLevel = actor.system?.attributes?.exhaustion ?? 0;
+    const exhaustionKey = `level_${exhaustionLevel}`;
+    const exhaustion = exhaustionData[exhaustionKey] ?? exhaustionData["level_0"];
     
+    const enrichedExhaustionDescription = await TextEditor.enrichHTML(
+      exhaustion.description ?? "No description available.",
+      { async: true }
+    );
 
     
 
@@ -139,23 +145,40 @@ Hooks.on("renderActorSheet5eCharacter2", (app, html, sheet) => {
             </div>
        
         <ul class="item-list">
-          <li class="item" style="display: flex; align-items: center; justify-content: space-between; padding: 0.5em 1em; border-top: 1px solid var(--dnd5e-color-faint);">
-            <div style="display: flex; align-items: center; gap: 0.5em;">
+                <li class="item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em; border-top: 1px solid var(--dnd5e-color-faint);">
+            <!-- Left: Terrain Info -->
+            <div style="display: flex; align-items: center; gap: 0.75em;">
               <strong>Terrain Type:</strong>
               <span>${terrainName}</span>
-            </div>
 
-            <div class="fit-item-icon">
-              <img src="${terrainIcon}" class="fit-terrain-icon" />
-
-              <div class="fit-item-tooltip">
-                <div class="fit-item-tooltip-title">${terrainName}</div>
-                <div class="fit-item-tooltip-body">${terrainDescription}</div>
+              <div class="fit-item-icon">
+                <img src="${terrainIcon}" class="fit-terrain-icon" />
+                <div class="fit-item-tooltip">
+                  <div class="fit-item-tooltip-title">${terrainName}</div>
+                  <div class="fit-item-tooltip-body">${terrainDescription}</div>
+                </div>
+                <div class="fit-item-label">${terrain.label}</div>
               </div>
-
-              <div class="fit-item-label">${terrain.label}</div>
             </div>
+
+            <!-- Right: Exhaustion Placeholder -->
+            <div style="display: flex; align-items: center; gap: 0.75em;">
+  <strong>Exhaustion Level:</strong>
+  <span>${exhaustion.name}</span>
+
+  <div class="fit-item-icon">
+    <img src="${exhaustion.icon}" class="fit-exhaustion-icon" />
+
+    <div class="fit-item-tooltip">
+      <div class="fit-item-tooltip-title">Exhaustion Level: ${exhaustion.name}</div>
+      <div class="fit-item-tooltip-body">${enrichedExhaustionDescription}</div>
+    </div>
+
+    <div class="fit-item-label">${exhaustion.label}</div>
+  </div>
+</div>
           </li>
+
         </ul>
         </div> <!-- ends items-section.card -->
         </div> <!-- ends fit-survival -->

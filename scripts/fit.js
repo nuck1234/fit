@@ -242,22 +242,21 @@ Hooks.on('updateWorldTime', async (seconds, elapsed) => {
     // ✅ Auto-patch Waterskin and Rations to ensure item.use() works (Argon compatible)
     Hooks.once("ready", async () => {
       if (!game.settings.get("fit", "autoConfigureConsumables")) return;
-    
+
       const rationName = game.settings.get("fit", "rationName")?.toLowerCase();
       const waterName = game.settings.get("fit", "waterName")?.toLowerCase();
     
-      // 🛠 Patch existing items on actor sheets proactively
       for (const actor of game.actors.contents) {
         for (const item of actor.items.contents) {
           const itemName = item.name.toLowerCase();
           if (![rationName, waterName].includes(itemName)) continue;
     
           const consumptionTarget = item.id;
-          const consumptionType = "itemUses";
+          const useActivity = item.system.activities?.use ?? null;
     
-          const needsPatch = !item.system.activation?.type ||
-                             item.system.consumption?.target !== consumptionTarget ||
-                             !item.system.activities?.use;
+          const needsPatch = !useActivity ||
+                             !useActivity.type ||
+                             item.system.consumption?.target !== consumptionTarget;
     
           if (!needsPatch) continue;
     
