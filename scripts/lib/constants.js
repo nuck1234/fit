@@ -196,3 +196,55 @@ export const terrainData = {
     description: "The towering peaks and jagged cliffs of the mountains present a different set of challenges. While fresh water sources may be found in streams and snowmelt, the thin air and strenuous exertion of climbing and navigating the steep slopes significantly increase your body's need for sustenance. <p>Finding enough food in this rugged terrain is difficult, amplifying the impact of hunger every 24 hours. <p>Furthermore, the exposed and often windy conditions, coupled with the cold nights at higher altitudes, make finding adequate shelter for rest a constant struggle. <p>The lack of proper rest further exacerbates the effects of the demanding physical activity. <p>In the mountains, the combination of amplified hunger due to the environment and disrupted rest due to the harsh conditions will lead to a rapid accumulation of exhaustion if resources are not carefully managed."
   }
 }
+
+export const exhaustionData = {
+  level_0: {
+    name: "Level Zero",
+    label: "Zero",  // 👈 This is used under the icon
+    icon: "systems/dnd5e/icons/svg/statuses/bleeding.svg",
+    description: "Your exhaustion level is zero, there are no impediments applied."
+    .trim()
+  },
+  level_1: {
+    name: "Level One",
+    label: "Level 1",  // 👈 This is used under the icon
+    icon: "systems/dnd5e/icons/svg/statuses/exhaustion-1.svg",
+    description: "Your exhaustion level is one. <p> A disadvantage on ability checks has applied. <p> Check your condition and make the necessary steps to remove this impediment."
+    .trim()
+},
+  level_2: {
+    name: "Level Two",
+    label: "Level 2",  // 👈 This is used under the icon
+    icon: "systems/dnd5e/icons/svg/statuses/exhaustion-2.svg",
+    description: "Your exhaustion level is two. <p> Your movement speed has been halved. <p> Check your condition and make the necessary steps to remove this impediment"
+    .trim()
+  },
+  level_3: {
+    name: "Level Three",
+    label: "Level 4",  // 👈 This is used under the icon
+    icon: "systems/dnd5e/icons/svg/statuses/exhaustion-3.svg",
+    description: "Your exhaustion level is three. <p> A disadvantage on attack and saving roles has been applied. <p> Check your condition and make the necessary steps to remove this impediment"
+    .trim()
+  },
+  level_4: {
+    name: "Level Four",
+    label: "Level 4",  // 👈 This is used under the icon
+    icon: "systems/dnd5e/icons/svg/statuses/exhaustion-4.svg",
+    description: "Your exhaustion level is four. <p> Your hit points have been halved.<p> Check your condition and make the necessary steps to remove this impediment"
+    .trim()
+  },
+  level_5: {
+    name: "Level Five",
+    label: "Level 5",  // 👈 This is used under the icon
+    icon: "systems/dnd5e/icons/svg/statuses/exhaustion-5.svg",
+    description: "Your exhaustion level is five. <p> Your speed has been reduced to zero. <p> Check your condition and make the necessary steps to remove this impediment"
+    .trim()
+  },
+  level_6: {
+    name: "Level Six",
+    label: "Level 6",  // 👈 This is used under the icon
+    icon: "systems/dnd5e/icons/svg/statuses/exhaustion-6.svg",
+    description: "Your exhaustion level is six. <p> You are now unconcious/dead. <p> Check your condition and make the necessary steps to remove this impediment"
+    .trim()
+  },
+}
