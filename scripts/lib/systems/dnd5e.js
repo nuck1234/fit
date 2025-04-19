@@ -278,7 +278,34 @@ Hooks.on("renderActorSheet5eCharacter2", (app, html, sheet) => {
  
 
     effectsTab.append(htmlToInject);
-    //console.log("[fit] ✅ Injected Survival Needs header with terrain row.");
+    // Attach handlers AFTER injection
+      html.find('img.fit-eat-button').off('click').on('click', async (event) => {
+        event.preventDefault();
+        await clickEatOrDrink(event, "eat");
+      });
+
+      html.find('img.fit-drink-button').off('click').on('click', async (event) => {
+        event.preventDefault();
+        await clickEatOrDrink(event, "drink");
+      });
+
+      html.find('img.fit-eat-button').off('contextmenu').on('contextmenu', (event) => openItemSheet(event));
+      html.find('img.fit-drink-button').off('contextmenu').on('contextmenu', (event) => openItemSheet(event));
+
+      html.find('img.fit-rest-button').off('click').on('click', async (event) => {
+        event.preventDefault();
+        const actorId = event.currentTarget.dataset.actorId;
+        const actor = game.actors.get(actorId);
+        if (!actor) return;
+
+        await actor.longRest();
+
+        if (game.settings.get("fit", "confirmChat")) {
+          ChatMessage.create({ content: `${actor.name} takes a long rest.` });
+        }
+
+        updateExhaustion(actor);
+      });
 
     // ✅ Attach Refill button handler
     html.find('.fit-refill-water').on('click', async (event) => {
@@ -526,49 +553,26 @@ const openItemSheet = async (event) => {
 /*--------------------------------------------------
 DND5e Chat button click handlers
 --------------------------------------------------*/
-Hooks.on("renderActorSheet5e", (app, html, data) => {
-  html.on('click', 'img.fit-eat-button', event => clickEatOrDrink(event, "eat"));
-  html.on('click', 'img.fit-drink-button', event => clickEatOrDrink(event, "drink"));
+Hooks.on("renderActorSheet5eCharacter2", (app, html, data) => {
+  html.find('img.fit-eat-button').off('click').on('click', async event => clickEatOrDrink(event, "eat"));
+  html.find('img.fit-drink-button').off('click').on('click', async event => clickEatOrDrink(event, "drink"));
 
-  html.on('contextmenu', 'img.fit-eat-button', event => openItemSheet(event));
-  html.on('contextmenu', 'img.fit-drink-button', event => openItemSheet(event));
-  
-  /*--------------------------------------------------
-  DND5e UI button click handlers
-  --------------------------------------------------*/
+  html.find('img.fit-eat-button').off('contextmenu').on('contextmenu', event => openItemSheet(event));
+  html.find('img.fit-drink-button').off('contextmenu').on('contextmenu', event => openItemSheet(event));
 
-  // Left-click interactions
-  html.on('click', 'img.fit-drink-button', async (event) => clickEatOrDrink(event, "drink"));
-  html.on('click', 'img.fit-eat-button', async (event) => clickEatOrDrink(event, "eat"));
-
-  // Right-click to open sheet
-  html.on('contextmenu', 'img.fit-drink-button', async (event) => {
-    const actor = game.actors.get(event.currentTarget.dataset.actorId);
-    const item = actor?.items.get(event.currentTarget.dataset.itemId);
-    if (item?.sheet) item.sheet.render(true);
-  });
-
-  html.on('contextmenu', 'img.fit-eat-button', async (event) => {
-    event.preventDefault();
-    event.preventDefault();
-    const actor = game.actors.get(event.currentTarget.dataset.actorId);
-    const item = actor?.items.get(event.currentTarget.dataset.itemId);
-    if (item?.sheet) item.sheet.render(true);
-  });
-  html.on('click', 'img.fit-rest-button', async (event) => {
+  html.find('img.fit-rest-button').off('click').on('click', async (event) => {
     event.preventDefault();
     const actorId = event.currentTarget.dataset.actorId;
     const actor = game.actors.get(actorId);
     if (!actor) return;
-  
+
     await actor.longRest();
-  
+
     if (game.settings.get("fit", "confirmChat")) {
       ChatMessage.create({ content: `${actor.name} takes a long rest.` });
     }
-  
+
     updateExhaustion(actor);
   });
-  
 });
 
