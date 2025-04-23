@@ -131,3 +131,24 @@
   padding: 4px;
   border-radius: 4px;
 }
+.fit-item-tooltip2 {
+  position: absolute;
+  top: 0; /* below */
+  left: 50%; /* to the right */
+  margin-top: 0.5em;
+  margin-left: 0.5em;
+  width: 240px;
+  background-color: rgba(85, 107, 128, 0.85);
+  color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 50;
+}
+
+.fit-item-icon:hover .fit-item-tooltip2 {
+  opacity: 1;
+  pointer-events: auto;
+}

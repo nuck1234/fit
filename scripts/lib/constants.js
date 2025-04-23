@@ -172,7 +172,7 @@ export const terrainData = {
     name: "Normal Terrain",
     label: "Normal",  // 👈 This is used under the icon
     icon: "modules/fit/templates/icons/normal.png",
-    description: "Traversing through typical landscapes such as forests, grasslands, or rolling hills presents a balanced set of challenges regarding survival. <p>Food and potable water sources are generally available with reasonable effort, and the climate is usually temperate, allowing for relatively comfortable rest. <p>The impact of not securing sufficient food, water, or rest is felt at a standard rate. <p>Every 24 hours without adequate sustenance or rest will lead to a gradual increase in fatigue, as one would naturally expect from prolonged exertion and lack of basic needs being met. <p>This environment doesn't inherently amplify the effects of deprivation in any specific area, making survival a matter of consistent effort rather than overcoming extreme environmental pressures."
+    description: "Traversing typical landscapes such as forests, grasslands, or hills presents a balanced set of challenges regarding survival. <p>Food and portable water sources are available with reasonable effort, the climate is usually temperate, allowing for comfortable rest. <p>The impact of not securing sufficient food, water, or rest is felt at a standard rate. <p>Every 24 hours without adequate sustenance or rest will lead to a gradual increase in fatigue. <p>This environment doesn't inherently amplify the effects of deprivation in any specific area, making survival a matter of consistent effort rather than overcoming extreme environmental pressures."
     .trim()
   },
   desert: {
