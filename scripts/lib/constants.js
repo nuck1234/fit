@@ -201,7 +201,7 @@ export const exhaustionData = {
   level_0: {
     name: "Level Zero",
     label: "Zero",  // 👈 This is used under the icon
-    icon: "systems/dnd5e/icons/svg/statuses/bleeding.svg",
+    icon: "modules/fit/templates/icons/figure-running-gray.webp",
     description: "Your exhaustion level is zero, there are no impediments applied."
     .trim()
   },
