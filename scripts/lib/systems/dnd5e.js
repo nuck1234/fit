@@ -1,6 +1,4 @@
-// This script integrates the hunger mechanics into the D&D 5e system within the Time-2-Eat module.
-// It includes logic to track hunger, notify players, and apply effects based on hunger levels.
-
+// This script integrates the hunger mechanics into the D&D 5e system
 
 import { daysFromSeconds } from "../time.js"; // Utility functions to calculate time differences.
 import { hungerChatMessage, sendHungerNotification } from "../chat.js"; // Function to send hunger notifications to the chat.
@@ -8,7 +6,6 @@ import { hungerLevel, hungerIcon, addOrUpdateHungerEffect, removeHungerEffects, 
 import { resetRestAfterRest, restIndex, restLevel } from "../rested.js"; // Function to set the last rest timestamp for an actor.
 import { consumeWater, thirstLevel,thirstIndex } from "../thirst.js"; // Function to set the last rest timestamp for an actor.
 import { terrainData, exhaustionData } from "../constants.js";
-
 
 
 
@@ -67,35 +64,12 @@ Hooks.once('ready', () => {
 /*----------------------------------------------------
 Function "Default" updateCharacterSheet to track hunger and rest
 -----------------------------------------------------*/
-Hooks.on("renderActorSheet5eCharacter2", (app, html, sheet) => {
-  if (!game.settings.get("fit", "enabled")) return;
-  //console.log("[fit] Injecting Survival heading into Effects tab...");
+async function generateSurvivalHtmlDefault({ actor }) {
+  const hungerEnabled = game.settings.get("fit", "hungerTracking");
+  const thirstEnabled = game.settings.get("fit", "thirstTracking");
+  const restEnabled = game.settings.get("fit", "restTracking");
 
-  setTimeout(() => {
-    const actor = app.actor || sheet.actor;
-    if (!actor) {
-      console.warn("[fit] No actor found.");
-      return;
-    }
-
-    const hungerEnabled = game.settings.get("fit", "hungerTracking");
-    const thirstEnabled = game.settings.get("fit", "thirstTracking");
-    const restEnabled = game.settings.get("fit", "restTracking");
-
-    if (!hungerEnabled && !thirstEnabled && !restEnabled) return;
-
-    const effectsTab = html.find(`.tab[data-tab="effects"]`);
-    if (!effectsTab.length) {
-      console.warn("[fit] Could not find Effects tab.");
-      return;
-    }
-
-    if (effectsTab.find(".fit-survival-header").length > 0) return;
-
-    const terrain = game.settings.get("fit", "terrain") || "Unknown";
-
-
-    (async () => {
+if (!hungerEnabled && !thirstEnabled && !restEnabled) return;
 
     // Retrieve the hunger data
     const hunger = hungerLevel(actor) || "Unknown";
@@ -137,9 +111,7 @@ Hooks.on("renderActorSheet5eCharacter2", (app, html, sheet) => {
     );
 
     
-
-
-    const htmlToInject = `
+    return`
       <section class="items-list fit-survival-header">
         <div class="fit-survival" style="margin-top: 1rem;">
           <div class="items-section card">
@@ -156,7 +128,7 @@ Hooks.on("renderActorSheet5eCharacter2", (app, html, sheet) => {
 
               <div class="fit-item-icon">
                 <img src="${terrainIcon}" class="fit-terrain-icon" />
-                <div class="fit-item-tooltip">
+                <div class="fit-item-tooltip2">
                   <div class="fit-item-tooltip-title">${terrainName}</div>
                   <div class="fit-item-tooltip-body">${terrainDescription}</div>
                 </div>
@@ -278,67 +250,105 @@ Hooks.on("renderActorSheet5eCharacter2", (app, html, sheet) => {
         
       </section>
     `;
- 
+  }
 
-    effectsTab.append(htmlToInject);
-    // Attach handlers AFTER injection
-      html.find('img.fit-eat-button').off('click').on('click', async (event) => {
-        event.preventDefault();
-        await clickEatOrDrink(event, "eat");
-      });
-
-      html.find('img.fit-drink-button').off('click').on('click', async (event) => {
-        event.preventDefault();
-        await clickEatOrDrink(event, "drink");
-      });
-
-      html.find('img.fit-eat-button').off('contextmenu').on('contextmenu', (event) => openItemSheet(event));
-      html.find('img.fit-drink-button').off('contextmenu').on('contextmenu', (event) => openItemSheet(event));
-
-      html.find('img.fit-rest-button').off('click').on('click', async (event) => {
-        event.preventDefault();
-        const actorId = event.currentTarget.dataset.actorId;
-        const actor = game.actors.get(actorId);
-        if (!actor) return;
-
-        await actor.longRest();
-
-        if (game.settings.get("fit", "confirmChat")) {
-          ChatMessage.create({ content: `${actor.name} takes a long rest.` });
-        }
-
-        updateExhaustion(actor);
-      });
-
-    // ✅ Attach Refill button handler
-    html.find('.fit-refill-water').on('click', async (event) => {
-      event.preventDefault();
-      const actorId = event.currentTarget.dataset.actorId;
-      const actor = game.actors.get(actorId);
-      if (!actor) return;
-
-      const waterName = game.settings.get('fit', 'waterName');
-      const waterskin = actor.items.getName(waterName);
-      if (!waterskin) {
-        ui.notifications.warn(`${actor.name} has no ${waterName} to refill.`);
-        return;
-      }
-
-      await waterskin.update({
-        "system.uses.value": waterskin.system.uses.max,
-        "system.uses.spent": 0
-      });
-
-      ui.notifications.info(`${actor.name}'s ${waterskin.name} has been refilled.`);
-      actor.sheet.render(true);
-    });
-
-    
-  })();
-
-  }, 0);
-});
-
+  Hooks.on("renderActorSheet5eCharacter2", async (app, html, data) => {
+    const actor = app.actor;
+    if (!actor || actor.type !== "character") return;
+  
+    const effectsTab = html.find(`.tab[data-tab="effects"]`);
+    const container = effectsTab.find(".items-list").first(); // usually the container for "Effects" content
+  
+    if (!container.length) {
+      console.warn("[fit] ❌ Could not find main container in Effects tab (default sheet).");
+      return;
+    }
+  
+    // Clean up any previous injections
+    container.find(".fit-survival-header").remove();
+  
+    // Inject survival UI
+    const htmlContent = await generateSurvivalHtmlDefault({ actor });
+  
+    container.append(htmlContent);
+  
+    // Optional: reattach event handlers here if needed
+  
+  
+  
+     // ✅ Attach button handlers here
+     const $html = $(html);
+  
+     $html.find("img.fit-eat-button").off("click").on("click", async (event) => {
+       event.preventDefault();
+       await clickEatOrDrink(event, "eat");
+     });
+   
+     $html.find("img.fit-drink-button").off("click").on("click", async (event) => {
+       event.preventDefault();
+       await clickEatOrDrink(event, "drink");
+     });
+   
+     $html.find("img.fit-eat-button").off("contextmenu").on("contextmenu", (event) => openItemSheet(event));
+     $html.find("img.fit-drink-button").off("contextmenu").on("contextmenu", (event) => openItemSheet(event));
+   
+     $html.find("img.fit-rest-button").off("click").on("click", async (event) => {
+       event.preventDefault();
+       const actorId = event.currentTarget.dataset.actorId;
+       const actor = game.actors.get(actorId);
+       if (!actor) return;
+   
+       await actor.longRest();
+       if (game.settings.get("fit", "confirmChat")) {
+         ChatMessage.create({ content: `${actor.name} takes a long rest.` });
+       }
+       updateExhaustion(actor);
+     });
+   
+     $html.find(".fit-refill-water").off("click").on("click", async (event) => {
+       event.preventDefault();
+       const actorId = event.currentTarget.dataset.actorId;
+       const actor = game.actors.get(actorId);
+       if (!actor) return;
+   
+       const waterName = game.settings.get("fit", "waterName");
+       const waterskin = actor.items.getName(waterName);
+       if (!waterskin) {
+         ui.notifications.warn(`${actor.name} has no ${waterName} to refill.`);
+         return;
+       }
+   
+       await waterskin.update({
+         "system.uses.value": waterskin.system.uses.max,
+         "system.uses.spent": 0
+       });
+   
+       ui.notifications.info(`${actor.name}'s ${waterskin.name} has been refilled.`);
+       actor.sheet.render(true);
+     });
+   });
+  
+  
+  Hooks.on("fitSurvivalNeedsChanged", async (actor) => {
+    if (!actor || actor.type !== "character") return;
+  
+    const html = actor.sheet?.element?.[0];
+    const effectsTab = html?.querySelector(".tidy-tab.effects");
+    const container = effectsTab?.querySelector(".scroll-container.flex-column.small-gap");
+    if (!container) return;
+  
+    container.querySelector(".fit-survival-header")?.remove();
+  
+    const conditionSection = container.querySelector('section[data-tidy-section-key="conditions"]');
+    const htmlContent = await generateSurvivalHtmlDefault({ actor });
+  
+    if (conditionSection) {
+      conditionSection.insertAdjacentHTML("afterend", htmlContent);
+    } else {
+      container.insertAdjacentHTML("beforeend", htmlContent);
+    }
+  });
+  
 
 /*==================================================
 Mechanics for Hunger, Thirst, and Rest
@@ -386,9 +396,7 @@ export async function evaluateNeeds(actor) {
     const chatContent = await sendHungerNotification(actor); 
     if (chatContent && chatContent.trim()) { // ✅ Fix: prevent .trim() on undefined
       hungerChatMessage(chatContent, actor);
-    } else {
-      console.warn(`[fit] Skipped sending empty chat message for ${actor.name}`);
-    }
+    } 
   }
 
   Hooks.call('evaluateNeeds', actor);
@@ -445,7 +453,6 @@ export async function evaluateNeeds(actor) {
         
         actor.update({ "system.attributes.exhaustion": highestLevel });
     };
-
 
     export const updateNeedsUI = (actor) => {
       if (!game.settings.get("fit", "enabled")) return;
@@ -509,7 +516,6 @@ Hooks.on("updateItem", async (item, change, diff, userId) => {
   }
 });
 
-
 /*==================================================
 DND5e Trigger Eat or Drink
 ===================================================*/
@@ -551,7 +557,6 @@ const openItemSheet = async (event) => {
   const item = actor?.items.get(itemId);
   if (item?.sheet) item.sheet.render(true);
 };
-
 
 /*--------------------------------------------------
 DND5e Chat button click handlers
@@ -824,7 +829,6 @@ Hooks.on("tidy5e-sheet.renderActorSheet", async (sheet, html, data) => {
      actor.sheet.render(true);
    });
  });
-
 
 Hooks.on("fitSurvivalNeedsChanged", async (actor) => {
   if (!actor || actor.type !== "character") return;
