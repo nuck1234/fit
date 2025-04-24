@@ -245,8 +245,6 @@ html.on('click', "button[data-action='consumeFood']", async (event) => {
       }
   
       updateExhaustion(actor);
-      //actor.sheet?.render(true);
-     // item.sheet?.render(true);
     }
   });
 
