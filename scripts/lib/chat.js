@@ -114,7 +114,7 @@ export function sendHungerNotification(actor) {
   let chatContent = `
   <div class='dnd5e chat-card'>
       <div class='card-header flexrow' style="align-items: center; text-align: left;">
-          <img src="modules/fit/templates/Icons/day-and-night.png" width="36" height="36">
+          <img src="modules/fit/templates/icons/day-and-night.png" width="36" height="36">
           <h3>${game.i18n.localize("fit.chat.another_day_passed")}${terrainText}.</h3>
       </div>
       <div class='card-content' style="text-align: left; font-family: 'Modesto Condensed', serif; font-size: 16px; font-weight: bold;">

@@ -8,8 +8,9 @@
     align-items: center;
     justify-content: center;
     position: relative;
-    width: 64px;
+    width: 60px;
     margin-left: 1.5rem;
+    flex-shrink: 0;          /* ✅ prevent it from squashing in small layouts */
   }
   
   .fit-item-icon img {
@@ -95,6 +96,10 @@
   font-size: 0.95em;
 }
 
+.floating-fit-tooltip {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3); 
+}
+
 /* Image hover highlight */
 .fit-item-icon img:hover {
   filter: brightness(1.3) saturate(1.2);
@@ -131,24 +136,60 @@
   padding: 4px;
   border-radius: 4px;
 }
-.fit-item-tooltip2 {
-  position: absolute;
-  top: 0; /* below */
-  left: 50%; /* to the right */
+.floating-fit-tooltip2 {
   margin-top: 0.5em;
   margin-left: 0.5em;
-  width: 240px;
+  width: 300px;
+  max-width: none;
   background-color: rgba(85, 107, 128, 0.85);
   color: white;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  opacity: 0;
+  z-index: 10000;
   pointer-events: none;
-  transition: opacity 0.2s ease;
-  z-index: 50;
+  font-size : 0.95em;
+  
+}
+
+.fit-item-tooltip2 {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  display: none !important; /* Ensure it takes up no space */
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .fit-item-icon:hover .fit-item-tooltip2 {
-  opacity: 1;
-  pointer-events: auto;
+  opacity: 0 !important; /* Ensure it stays hidden on hover */
+  pointer-events: none !important;
 }
+
+.floating-fit-tooltip3 {
+  margin-top: 0.5em;
+  margin-left: 0.5em;
+  width: 300px;
+  max-width: none;
+  background-color: rgba(85, 107, 128, 0.85);
+  color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  pointer-events: none;
+  font-size : 0.95em;
+  
+}
+
+
+.fit-item-tooltip3 {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  display: none !important; /* Ensure it takes up no space */
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.fit-item-icon:hover .fit-item-tooltip3 {
+  opacity: 0 !important; /* Ensure it stays hidden on hover */
+  pointer-events: none !important;
+}
+

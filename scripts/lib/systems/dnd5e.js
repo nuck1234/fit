@@ -1,13 +1,30 @@
 // This script integrates the hunger mechanics into the D&D 5e system
 
-import { daysFromSeconds } from "../time.js"; // Utility functions to calculate time differences.
-import { hungerChatMessage, sendHungerNotification } from "../chat.js"; // Function to send hunger notifications to the chat.
-import { hungerLevel, hungerIcon, addOrUpdateHungerEffect, removeHungerEffects, daysHungryForActor, consumeFood,hungerIndex } from "../hunger.js"; // Functions and utilities for managing hunger levels and effects.
-import { resetRestAfterRest, restIndex, restLevel } from "../rested.js"; // Function to set the last rest timestamp for an actor.
-import { consumeWater, thirstLevel,thirstIndex } from "../thirst.js"; // Function to set the last rest timestamp for an actor.
+// This script integrates the hunger mechanics into the D&D 5e system
+
+import { daysFromSeconds } from "../time.js"; // Utility to calculate time differences
+import { hungerChatMessage, sendHungerNotification } from "../chat.js"; // Send hunger messages to chat
+import {
+  hungerLevel,
+  hungerIcon,
+  addOrUpdateHungerEffect,
+  removeHungerEffects,
+  daysHungryForActor,
+  consumeFood,
+  hungerIndex
+} from "../hunger.js";
+import {
+  resetRestAfterRest,
+  restIndex,
+  restLevel
+} from "../rested.js";
+import {
+  consumeWater,
+  thirstLevel,
+  thirstIndex
+} from "../thirst.js";
 import { terrainData, exhaustionData } from "../constants.js";
-
-
+ 
 
 /* ======================================
  DND5e Legacy Character Sheet UI Updates
@@ -61,295 +78,443 @@ Hooks.once('ready', () => {
   });
 });
 
-/*----------------------------------------------------
-Function "Default" updateCharacterSheet to track hunger and rest
------------------------------------------------------*/
-async function generateSurvivalHtmlDefault({ actor }) {
+  
+/*========================================================================
+Fit Module: Inject Survival UI into CharacterSheets for default and Tidy5e
+=========================================================================*/
+async function generateSurvivalHtml({ actor, timestamp }) {  
   const hungerEnabled = game.settings.get("fit", "hungerTracking");
   const thirstEnabled = game.settings.get("fit", "thirstTracking");
   const restEnabled = game.settings.get("fit", "restTracking");
 
+  const isTidySheet = document.querySelector(".tidy5e-sheet") !== null;
+
 if (!hungerEnabled && !thirstEnabled && !restEnabled) return;
 
-    // Retrieve the hunger data
-    const hunger = hungerLevel(actor) || "Unknown";
-    const rationName = game.settings.get("fit", "rationName") ?? "Rations";
-    const rationItem = actor.items.find(i => i.name === rationName);
-    const hungerVictual = rationItem?.name || "Unknown";
-    const hungerQty = rationItem?.system?.quantity ?? 0;
-    const hungerCharges = rationItem?.system?.uses?.value ?? 0;
-    const hungerIcon = rationItem?.img || "icons/consumables/grains/bread-loaf-boule-rustic-brown.webp";
-    const hungerDescription = rationItem?.system.description?.value || "No description";
-    const enrichedHungerDescription = await TextEditor.enrichHTML(hungerDescription, { async: true });
+  // Retrieve the hunger data
+  const hunger = hungerLevel(actor) || "Unknown";
+  const rationName = game.settings.get("fit", "rationName") ?? "Rations";
+  const rationItem = actor.items.find(i => i.name === rationName);
+  const hungerVictual = rationItem?.name || "Unknown";
+  const hungerQty = rationItem?.system?.quantity ?? 0;
+  const hungerCharges = rationItem?.system?.uses?.value ?? 0;
+  const hungerIcon = rationItem?.img || "icons/consumables/grains/bread-loaf-boule-rustic-brown.webp";
+  const hungerDescription = rationItem?.system.description?.value || "No description";
+  const enrichedHungerDescription = await TextEditor.enrichHTML(hungerDescription, { async: true });
 
-    // Retrieve the thirst data 
-    const thirst = thirstLevel(actor) || "Unknown";
-    const waterName = game.settings.get("fit", "waterName") ?? "Waterskin";  // ✅ Add this
-    const thirstItem = actor.items.find(i => i.name === waterName);
-    const thirstVictual = thirstItem?.name || "Unknown";
-    const thirstQty = thirstItem?.system?.quantity ?? 0;
-    const thirstCharges = thirstItem?.system?.uses?.value ?? 0;
-    const thirstIcon = thirstItem?.img || "icons/sundries/survival/wetskin-leather-purple.webp";
-    const thirstDescription = thirstItem?.system.description?.value || "No description";
-    const enrichedThirstDescription = await TextEditor.enrichHTML(thirstDescription, { async: true });
+  // Retrieve the thirst data 
+  const thirst = thirstLevel(actor) || "Unknown";
+  const waterName = game.settings.get("fit", "waterName") ?? "Waterskin";  // ✅ Add this
+  const thirstItem = actor.items.find(i => i.name === waterName);
+  const thirstVictual = thirstItem?.name || "Unknown";
+  const thirstQty = thirstItem?.system?.quantity ?? 0;
+  const thirstCharges = thirstItem?.system?.uses?.value ?? 0;
+  const thirstIcon = thirstItem?.img || "icons/sundries/survival/wetskin-leather-purple.webp";
+  const thirstDescription = thirstItem?.system.description?.value || "No description";
+  const enrichedThirstDescription = await TextEditor.enrichHTML(thirstDescription, { async: true });
 
-    // Retrieve the terrain data
-    const terrainKey = game.settings.get("fit", "terrain") || "normal";
-    const terrain = terrainData[terrainKey];
-    const terrainName = terrain.name;
-    const terrainIcon = terrain.icon;
-    const terrainDescription = await TextEditor.enrichHTML(terrain.description, { async: true });
-    
-    // Retrieve the exhaustion data
-    const exhaustionLevel = actor.system?.attributes?.exhaustion ?? 0;
-    const exhaustionKey = `level_${exhaustionLevel}`;
-    const exhaustion = exhaustionData[exhaustionKey] ?? exhaustionData["level_0"];
-    
-    const enrichedExhaustionDescription = await TextEditor.enrichHTML(
-      exhaustion.description ?? "No description available.",
-      { async: true }
-    );
+  // Retrieve terrain data
+  const terrainKey = game.settings.get("fit", "terrain") || "normal";
+  const terrain = terrainData[terrainKey];
+  const terrainName = terrain.name;
+  const terrainIcon = terrain.icon;
+  const terrainDescription = await TextEditor.enrichHTML(terrain.description, { async: true });
 
-    
-    return`
-      <section class="items-list fit-survival-header">
-        <div class="fit-survival" style="margin-top: 1rem;">
-          <div class="items-section card">
-            <div class="items-header header">
-              <h3 class="item-name"><i class="fas fa-leaf"></i> Survival Needs</h3>
-            </div>
-       
-        <ul class="item-list">
-                <li class="item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em; border-top: 1px solid var(--dnd5e-color-faint);">
-            <!-- Left: Terrain Info -->
-            <div style="display: flex; align-items: center; gap: 0.75em;">
-              <strong>Terrain Type:</strong>
-              <span>${terrainName}</span>
+  // Retrieve exhaustion data
+  const exhaustionLevel = actor.system?.attributes?.exhaustion ?? 0;
+  const exhaustionKey = `level_${exhaustionLevel}`;
+  const exhaustion = exhaustionData[exhaustionKey] ?? exhaustionData["level_0"];
+  const enrichedExhaustionDescription = await TextEditor.enrichHTML(
+    exhaustion.description ?? "No description available.",
+    { async: true }
+  );
 
-              <div class="fit-item-icon">
-                <img src="${terrainIcon}" class="fit-terrain-icon" />
-                <div class="fit-item-tooltip2">
-                  <div class="fit-item-tooltip-title">${terrainName}</div>
-                  <div class="fit-item-tooltip-body">${terrainDescription}</div>
+  return `
+          <section class="items-list fit-survival-needs-section">
+            <div class="fit-survival" style="margin-top: 1rem;">
+              <div class="items-section card">
+                <div class="items-header header fit-toggle-survival" id="fit-toggle-survival-${timestamp}" style="
+                cursor: pointer;">
+                  <h3 class="item-name">
+                    <i class="fas fa-chevron-down" id="fit-survival-icon-${timestamp}" style="margin-right: 0.5em;"></i>
+                    Terrain & Exhaustion
+                  </h3>
                 </div>
-                <div class="fit-item-label">${terrain.label}</div>
-              </div>
+                <ul class="item-list" id="fit-survival-body-${timestamp}">
+                <li class="item fit-survival-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em; border-top: 1px solid var(--dnd5e-color-faint);">
+                  <div class="fit-survival-item-left" style="display: flex; align-items: center; gap: 0.75em;">
+                    <strong>Terrain Type:</strong>
+                    <span>${terrainName}</span>
+                    <div class="fit-item-icon">
+                      <img src="${terrainIcon}" class="fit-terrain-icon" />
+                      <div class="fit-item-tooltip2">
+                        <div class="fit-item-tooltip-title">${terrainName}</div>
+                        <div class="fit-item-tooltip-body">${terrainDescription}</div>
+                      </div>
+                      <div class="fit-item-label">${terrain.label}</div>
+                    </div>
+                  </div>
+                  <div class="fit-survival-item-right" style="display: flex; align-items: center; gap: 0.75em;">
+                    <strong>Exhaustion Level:</strong>
+                    <span>${exhaustion.name}</span>
+                    <div class="fit-item-icon" style="margin-left: 1.5em;"style="margin-right: 1.5em;">
+                      <img src="${exhaustion.icon}" class="fit-exhaustion-icon" />
+                      <div class="fit-item-tooltip3">
+                        <div class="fit-item-tooltip-title">Exhaustion Level: ${exhaustion.name}</div>
+                        <div class="fit-item-tooltip-body">${enrichedExhaustionDescription}</div>
+                      </div>
+                      <div class="fit-item-label">${exhaustion.label}</div>
+                    </div>
+                  </div>
+                </li>
+              </ul>
             </div>
-
-            <!-- Right: Exhaustion Placeholder -->
-            <div style="display: flex; align-items: center; gap: 0.75em;">
-  <strong>Exhaustion Level:</strong>
-  <span>${exhaustion.name}</span>
-
-  <div class="fit-item-icon">
-    <img src="${exhaustion.icon}" class="fit-exhaustion-icon" />
-
-    <div class="fit-item-tooltip">
-      <div class="fit-item-tooltip-title">Exhaustion Level: ${exhaustion.name}</div>
-      <div class="fit-item-tooltip-body">${enrichedExhaustionDescription}</div>
-    </div>
-
-    <div class="fit-item-label">${exhaustion.label}</div>
-  </div>
-</div>
-          </li>
-
-        </ul>
-        </div> <!-- ends items-section.card -->
-        </div> <!-- ends fit-survival -->
-
-      <section class="items-list fit-survival-header">
-        <div class="fit-survival" style="margin-top: 1rem;">
-          <div class="items-section card">
-            <div class="items-header header" style="
-              display: grid;
-              grid-template-columns: 3fr 3fr 2fr 1fr 1fr 1fr 1fr;
-              align-items: center;
-              font-size: 0.75em;
-            ">
-              <h3 class="item-name" style="margin: 0;">
-                <i class="fas fa-leaf"></i> Condition
-              </h3>
-              <div style="padding-left: 1rem;">STATUS</div>
-              <div style="text-align: left;">VICTUAL TYPE</div>
-              <div style="text-align: left;">QUANTITY</div>
-              <div style="text-align: center;">CHARGES</div>
-              <div style="text-align: center;">REFILL</div>
-              <div style="text-align: center;">USE ITEM</div>
-            </div>
-
-            <ul class="item-list">
-              ${hungerEnabled ? `
-                  <li class="item" style="display: grid; grid-template-columns: 3fr 3fr 2fr 1fr 1fr 1fr 1fr; align-items: center; padding: 0.5em 1em; border-top: 1px solid var(--dnd5e-color-faint);">
-                  <div>Hunger</div>
-                  <div>${hunger}</div>
-                  <div>${hungerVictual}</div>
-                  <div style="text-align: center;">${hungerQty}</div>
-                  <div style="text-align: center;">${hungerCharges}</div>
-                  <div style="text-align: center;">-</div>
-                  <div class="fit-item-icon">
-                    <img src="${hungerIcon}" class="fit-eat-button" data-actor-id="${actor.id}" data-item-id="${rationItem?.id}" />
-                    
-                    <div class="fit-item-tooltip">
-                      <div class="fit-item-tooltip-title">${hungerVictual}</div>
-                      <div class="fit-item-tooltip-body">${enrichedHungerDescription}</div>
-                    </div>
-
-                    <div class="fit-item-charges">${hungerCharges}</div>
-                    <div class="fit-item-label">${hungerVictual}</div>
-                  </div>
-                </li>
-              ` : ''}
-              ${thirstEnabled ? `
-                <li class="item" style="display: grid; grid-template-columns: 3fr 3fr 2fr 1fr 1fr 1fr 1fr; align-items: center; padding: 0.5em 1em; border-top: 1px solid var(--dnd5e-color-faint);">
-                  <div>Thirst</div>
-                  <div>${thirst}</div>
-                  <div style="text-align: ;">${thirstVictual}</div>
-                  <div style="text-align: center;">${thirstQty}</div>
-                  <div style="text-align: center;">${thirstCharges}</div>
-                  <div style="text-align: center;">
-                    <button class="fit-refill-water" data-actor-id="${actor.id}" title="Refill water">↺</button>
-                  </div>
-                  <div class="fit-item-icon">
-                    <img src="${thirstIcon}" class="fit-drink-button" data-actor-id="${actor.id}" data-item-id="${thirstItem?.id}" />
-                    
-                    <div class="fit-item-tooltip">
-                      <div class="fit-item-tooltip-title">${thirstVictual}</div>
-                      <div class="fit-item-tooltip-body">${enrichedThirstDescription}</div>
-                    </div>
-
-                    <div class="fit-item-charges">${thirstCharges}</div>
-                    <div class="fit-item-label">${thirstVictual}</div>
-                </div>
-                </li>
-              ` : ''}
-
-              ${restEnabled ? `
-                <li class="item" style="display: grid; grid-template-columns: 3fr 3fr 2fr 1fr 1fr 1fr 1fr; align-items: center; padding: 0.5em 1em; border-top: 1px solid var(--dnd5e-color-faint);">
-                  <div>Rest</div>
-                  <div>${restLevel(actor)}</div>
-                  <div> Long Rest</div>
-                  <div style="text-align: center;">-</div>
-                  <div style="text-align: center;">-</div>
-                  <div style="text-align: center;">-</div>
-                  <div class="fit-item-icon" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                    <img src="modules/fit/templates/icons/bedroll-grey.webp" class="fit-rest-button" data-actor-id="${actor.id}" />
-
-                    <div class="fit-item-tooltip">
-                      <div class="fit-item-tooltip-title">Long Rest</div>
-                      <div class="fit-item-tooltip-body">Take a long rest to recover health and reset fatigue.</div>
-                    </div>
-
-                    <div class="fit-item-label">Long Rest</div>
-                  </div>
-                </li>
-              ` : ''}
-            </ul>
           </div>
-        </div>
-        
-      </section>
-    `;
-  }
+        </section>
 
-  Hooks.on("renderActorSheet5eCharacter2", async (app, html, data) => {
-    const actor = app.actor;
-    if (!actor || actor.type !== "character") return;
-  
-    const effectsTab = html.find(`.tab[data-tab="effects"]`);
-    const container = effectsTab.find(".items-list").first(); // usually the container for "Effects" content
-  
-    if (!container.length) {
-      console.warn("[fit] ❌ Could not find main container in Effects tab (default sheet).");
-      return;
+        <section class="items-list fit-condition-section">
+        <div class="fit-survival" style="margin-top: 1rem;">
+        <div class="items-section card">
+        <div class="items-header header fit-toggle-condition ${!isTidySheet ? 'fit-default-headings' : ''}" id="fit-toggle-condition-${timestamp}" style="
+                    cursor: pointer;
+                    display: grid;
+                    justify-content: center;
+                    grid-template-columns: 2fr 2fr 2fr 1fr 1fr 1fr 1fr;
+                    font-size: 0.85em;
+                  ">
+                  <h3 class="item-name">
+                  <i class="fas fa-chevron-down" id="fit-condition-icon-${timestamp}"></i>
+                  Fitness and Supplies
+                </h3>
+                <div class="fit-condition-header-cell" style="${isTidySheet ? 'font-weight: normal;' : 'text-transform: uppercase; display: flex; align-items: center; justify-content: center;'}">Status</div>
+                <div class="fit-condition-header-cell" style="${isTidySheet ? 'font-weight: normal;' : 'text-transform: uppercase; display: flex; align-items: center; justify-content: center;'}">Victual Type</div>
+                <div class="fit-condition-header-cell" style="${isTidySheet ? 'font-weight: normal;' : 'text-transform: uppercase; display: flex; align-items: center; justify-content: center;'}">Quantity</div>
+                <div class="fit-condition-header-cell" style="${isTidySheet ? 'font-weight: normal;' : 'text-transform: uppercase; display: flex; align-items: center; justify-content: center;'}">Charges</div>
+                <div class="fit-condition-header-cell" style="${isTidySheet ? 'font-weight: normal;' : 'text-transform: uppercase; display: flex; align-items: center; justify-content: center;'}">Refill</div>
+                <div class="fit-condition-header-cell" style="${isTidySheet ? 'font-weight: normal;' : 'text-transform: uppercase; display: flex; align-items: center; justify-content: center;'}">Use Item</div>
+              </div>
+              <ul class="item-list" id="fit-condition-body-${timestamp}">
+                ${hungerEnabled
+                  ? `
+                    <li class="item fit-condition-item" style="display: grid; grid-template-columns: 2fr 2fr 2fr 1fr 1fr 1fr 1fr; align-items: center; padding: 0.5em 1em; border-top: 1px solid var(--dnd5e-color-faint);">
+                      <div class="fit-condition-cell">Hunger</div>
+                      <div class="fit-condition-cell" style="text-align: center;">${hunger}</div>
+                      <div class="fit-condition-cell" style="text-align: center;">${hungerVictual}</div>
+                      <div class="fit-condition-cell" style="text-align: center;">${hungerQty}</div>
+                      <div class="fit-condition-cell" style="text-align: center;">${hungerCharges}</div>
+                      <div class="fit-condition-cell" style="text-align: center;">-</div>
+                      <div class="fit-item-icon">
+                        <img src="${hungerIcon}" class="fit-eat-button" data-actor-id="${actor.id}" data-item-id="${
+                        rationItem?.id
+                      }" />
+                        <div class="fit-item-tooltip">
+                          <div class="fit-item-tooltip-title">${hungerVictual}</div>
+                          <div class="fit-item-tooltip-body">${enrichedHungerDescription}</div>
+                        </div>
+                        <div class="fit-item-charges">${hungerCharges}</div>
+                        <div class="fit-item-label">${hungerVictual}</div>
+                      </div>
+                    </li>
+                  `
+                  : ''}
+                ${thirstEnabled
+                  ? `
+                    <li class="item fit-condition-item" style="display: grid; grid-template-columns: 2fr 2fr 2fr 1fr 1fr 1fr 1fr; align-items: center; padding: 0.5em 1em; border-top: 1px solid var(--dnd5e-color-faint);">
+                      <div class="fit-condition-cell">Thirst</div>
+                      <div class="fit-condition-cell"  style="text-align: center;" >${thirst}</div>
+                      <div class="fit-condition-cell"  style="text-align: center;">${thirstVictual}</div>
+                      <div class="fit-condition-cell"  style="text-align: center;">${thirstQty}</div>
+                      <div class="fit-condition-cell"  style="text-align: center;">${thirstCharges}</div>
+                      <div class="fit-condition-cell"  style="text-align: center;">
+                        <button class="fit-refill-water" data-actor-id="${actor.id}" title="Refill water">↺</button>
+                      </div>
+                      <div class="fit-item-icon">
+                        <img src="${thirstIcon}" class="fit-drink-button" data-actor-id="${actor.id}" data-item-id="${
+                        thirstItem?.id
+                      }" />
+                        <div class="fit-item-tooltip">
+                          <div class="fit-item-tooltip-title">${thirstVictual}</div>
+                          <div class="fit-item-tooltip-body">${enrichedThirstDescription}</div>
+                        </div>
+                        <div class="fit-item-charges">${thirstCharges}</div>
+                        <div class="fit-item-label">${thirstVictual}</div>
+                    </div>
+                    </li>
+                  `
+                  : ''}
+                ${restEnabled
+                  ? `
+                    <li class="item fit-condition-item" style="display: grid; grid-template-columns: 2fr 2fr 2fr 1fr 1fr 1fr 1fr; align-items: center; padding: 0.5em 1em; border-top: 1px solid var(--dnd5e-color-faint);">
+                      <div class="fit-condition-cell">Rest</div>
+                      <div class="fit-condition-cell"  style="text-align: center;">${restLevel(actor)}</div>
+                      <div class="fit-condition-cell"  style="text-align: center;"> Long Rest</div>
+                      <div class="fit-condition-cell"  style="text-align: center;">-</div>
+                      <div class="fit-condition-cell"  style="text-align: center;">-</div>
+                      <div class="fit-condition-cell"  style="text-align: center;">-</div>
+                      <div class="fit-item-icon" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <img src="modules/fit/templates/icons/bedroll-grey.webp" class="fit-rest-button" data-actor-id="${actor.id}" />
+                        <div class="fit-item-tooltip">
+                          <div class="fit-item-tooltip-title">Long Rest</div>
+                          <div class="fit-item-tooltip-body">Take a long rest to recover health and reset fatigue.</div>
+                        </div>
+                        <div class="fit-item-label">Long Rest</div>
+                      </div>
+                    </li>
+                  `
+                  : ''}
+              </ul>
+            </div>
+          </div>
+        </section>
+      `;
     }
-  
-    // Clean up any previous injections
-    container.find(".fit-survival-header").remove();
-  
-    // Inject survival UI
-    const htmlContent = await generateSurvivalHtmlDefault({ actor });
-  
-    container.append(htmlContent);
-  
-    // Optional: reattach event handlers here if needed
-  
-  
-  
-     // ✅ Attach button handlers here
-     const $html = $(html);
-  
-     $html.find("img.fit-eat-button").off("click").on("click", async (event) => {
-       event.preventDefault();
-       await clickEatOrDrink(event, "eat");
-     });
-   
-     $html.find("img.fit-drink-button").off("click").on("click", async (event) => {
-       event.preventDefault();
-       await clickEatOrDrink(event, "drink");
-     });
-   
-     $html.find("img.fit-eat-button").off("contextmenu").on("contextmenu", (event) => openItemSheet(event));
-     $html.find("img.fit-drink-button").off("contextmenu").on("contextmenu", (event) => openItemSheet(event));
-   
-     $html.find("img.fit-rest-button").off("click").on("click", async (event) => {
-       event.preventDefault();
-       const actorId = event.currentTarget.dataset.actorId;
-       const actor = game.actors.get(actorId);
-       if (!actor) return;
-   
-       await actor.longRest();
-       if (game.settings.get("fit", "confirmChat")) {
-         ChatMessage.create({ content: `${actor.name} takes a long rest.` });
+    /*=========================================
+    Inject Survival UI
+    =========================================*/
+      async function renderSurvivalUI(app, html, data) {
+      const actor = app.actor;
+      if (!actor || actor.type !== "character") return;
+
+
+      if (html instanceof jQuery) {
+        html = html[0]; // Always use raw DOM element
+      }
+    
+      const timestamp = Date.now();
+      const isTidy = html.classList.contains("tidy5e-sheet");
+    
+      let effectsTab;
+      let container;
+    
+      if (isTidy) {
+        effectsTab = html.querySelector(".tidy-tab.effects");
+        container = effectsTab?.querySelector(".scroll-container.flex-column.small-gap");
+      } else {
+        effectsTab = html.querySelector('.tab[data-tab="effects"]');
+        container = effectsTab?.querySelector(".items-list");
+      }
+    
+      if (!container) {
+        console.warn("[fit] ❌ Could not find Effects tab container.");
+        return;
+      }
+    
+      // Remove old
+      container.querySelector(".fit-survival-needs-section")?.remove();
+      container.querySelector(".fit-condition-section")?.remove();
+      container.querySelector(".fit-survival-header")?.remove();
+    
+      // Generate unified HTML
+      const htmlContent = await generateSurvivalHtml({ actor, timestamp });
+      if (!htmlContent) return;
+    
+      if (isTidy) {
+        container.insertAdjacentHTML("beforeend", htmlContent);
+      } else {
+        $(container).append(htmlContent);
+      }
+    
+      const $container = $(container);
+      
+         
+      /*=========================================
+      Fixed Position Floating Tooltips - Right
+      =========================================*/
+      $container.find(".fit-item-icon").hover(
+        function (event) {
+          const tooltipContent = $(this).find(".fit-item-tooltip2");
+          if (!tooltipContent.length) return;
+      
+          const floatingTooltip = $('<div class="floating-fit-tooltip2"></div>')
+            .html(tooltipContent.html())
+            .appendTo(document.body);
+      
+          floatingTooltip.css({
+            position: "absolute",
+            top: event.pageY + 10,
+            left: event.pageX + 10
+          });
+        },
+        function () {
+          $(".floating-fit-tooltip2").remove();
+        }
+      );
+
+      /*=========================================
+        Fixed Position Floating Tooltips - Left
+        =========================================*/
+      $container.find(".fit-item-icon").hover(
+        function (event) {
+          const tooltipContent = $(this).find(".fit-item-tooltip3");
+          if (!tooltipContent.length) return;
+
+          const floatingTooltip = $('<div class="floating-fit-tooltip3"></div>')
+            .html(tooltipContent.html())
+            .appendTo(document.body);
+
+          floatingTooltip.css({
+            position: "absolute",
+            top: event.pageY + 10,
+            // Change this line to position on the left
+            left: event.pageX - floatingTooltip.outerWidth() - 10 
+          });
+        },
+        function () {
+          $(".floating-fit-tooltip3").remove();
+        }
+      );
+      
+      
+ 
+      /*=========================================
+      Toggle Collapse Functionality
+      =========================================*/
+      // ✅ Add click event to toggle collapse
+      $container.find(`#fit-toggle-condition-${timestamp}`).on("click", () => { // ✅ Use the same timestamp
+        const body = $container.find(`#fit-condition-body-${timestamp}`); // ✅ Use the same timestamp
+        const icon = $container.find(`#fit-condition-icon-${timestamp}`); // ✅ Use the same timestamp
+           
+      body.toggle();
+      icon.toggleClass("collapsed");
+    });
+    
+    // ✅ Survival Needs Toggle (new part)
+    $container.find(`#fit-toggle-survival-${timestamp}`).on("click", () => { // ✅ Use the same timestamp
+      const body = $container.find(`#fit-survival-body-${timestamp}`); // ✅ Use the same timestamp
+      const icon = $container.find(`#fit-survival-icon-${timestamp}`); // ✅ Use the same timestamp
+            
+      body.toggle();
+      icon.toggleClass("collapsed");
+      
+      });
+      
+    // ✅ Add style for rotation ONCE
+      if (!document.getElementById("fit-collapse-style")) {
+        const style = document.createElement("style");
+        style.id = "fit-collapse-style";
+        style.innerHTML = `
+          #fit-condition-icon.collapsed,
+          #fit-survival-icon.collapsed {
+          transform: rotate(-90deg);
+          transition: transform 0.2s ease;
        }
-       updateExhaustion(actor);
-     });
-   
-     $html.find(".fit-refill-water").off("click").on("click", async (event) => {
-       event.preventDefault();
-       const actorId = event.currentTarget.dataset.actorId;
-       const actor = game.actors.get(actorId);
-       if (!actor) return;
-   
-       const waterName = game.settings.get("fit", "waterName");
-       const waterskin = actor.items.getName(waterName);
-       if (!waterskin) {
-         ui.notifications.warn(`${actor.name} has no ${waterName} to refill.`);
-         return;
-       }
-   
-       await waterskin.update({
-         "system.uses.value": waterskin.system.uses.max,
-         "system.uses.spent": 0
-       });
-   
-       ui.notifications.info(`${actor.name}'s ${waterskin.name} has been refilled.`);
-       actor.sheet.render(true);
-     });
-   });
-  
-  
-  Hooks.on("fitSurvivalNeedsChanged", async (actor) => {
+     `;
+     document.head.appendChild(style);
+    }
+      
+      // ✅ Attach button handlers here     
+      const $html = $(html);
+      
+      $html.find("img.fit-eat-button").off("click").on("click", async (event) => {
+        event.preventDefault();
+        await clickEatOrDrink(event, "eat");
+      });   
+
+      $html.find("img.fit-drink-button").off("click").on("click", async (event) => {
+        event.preventDefault();
+        await clickEatOrDrink(event, "drink");
+      });
+          
+      $html.find("img.fit-eat-button").off("contextmenu").on("contextmenu", (event) => openItemSheet(event));
+      $html.find("img.fit-drink-button").off("contextmenu").on("contextmenu", (event) => openItemSheet(event));
+      
+      $html.find("img.fit-rest-button").off("click").on("click", async (event) => {
+        event.preventDefault();
+        const actorId = event.currentTarget.dataset.actorId;
+        const actor = game.actors.get(actorId);
+        if (!actor) return;
+          
+        await actor.longRest();
+        if (game.settings.get("fit", "confirmChat")) {
+          ChatMessage.create({ content: `${actor.name} takes a long rest.` });
+        }
+        updateExhaustion(actor);
+      });
+          
+      $html.find(".fit-refill-water").off("click").on("click", async (event) => {
+        event.preventDefault();
+        const actorId = event.currentTarget.dataset.actorId;
+        const actor = game.actors.get(actorId);
+        if (!actor) return;
+          
+        const waterName = game.settings.get("fit", "waterName");
+        const waterskin = actor.items.getName(waterName);
+        if (!waterskin) {
+          ui.notifications.warn(`${actor.name} has no ${waterName} to refill.`);
+          return;
+        }
+          
+        await waterskin.update({
+          "system.uses.value": waterskin.system.uses.max,
+          "system.uses.spent": 0
+      });
+          
+      ui.notifications.info(`${actor.name}'s ${waterskin.name} has been refilled.`);
+      actor.sheet.render(true);
+      });
+          
+      }
+
+      /*=========================================
+      Hook Survival UI into Sheet Renders
+      =========================================*/
+
+      // Hook into Tidy5e and Default D&D5e character sheets
+      ["tidy5e-sheet.renderActorSheet", "renderActorSheet5eCharacter2"].forEach(hook => {
+        Hooks.on(hook, async (app, html, data) => {
+          await renderSurvivalUI(app, html, data);
+        });
+      });
+  /*=========================================
+  Survival Needs Changed
+  =========================================*/
+      
+  Hooks.on("fitSurvivalNeedsChanged", async (actor, timestamp) => {
     if (!actor || actor.type !== "character") return;
   
     const html = actor.sheet?.element?.[0];
-    const effectsTab = html?.querySelector(".tidy-tab.effects");
-    const container = effectsTab?.querySelector(".scroll-container.flex-column.small-gap");
-    if (!container) return;
+    if (!html) return;
   
+    const isTidy = html.classList.contains("tidy5e-sheet");
+  
+    let container;
+    if (isTidy) {
+      const effectsTab = html.querySelector(".tidy-tab.effects");
+      container = effectsTab?.querySelector(".scroll-container.flex-column.small-gap");
+    } else {
+      const effectsTab = html.querySelector('.tab[data-tab="effects"]');
+      container = effectsTab?.querySelector(".items-list") || html.querySelector(".items-list");
+    }
+  
+    if (!container) {
+      console.warn("[fit] ❌ No container found in Survival Needs Changed");
+      return;
+    }
+  
+    if (hasInjectedThisTimeAdvance.has(actor)) {
+      console.log("[fit] Skipping Survival Header Injection (Already Injected This Cycle)");
+      return;
+    }
+  
+    // Clean up old
+    container.querySelector(".fit-survival-needs-section")?.remove();
+    container.querySelector(".fit-condition-section")?.remove();
     container.querySelector(".fit-survival-header")?.remove();
   
-    const conditionSection = container.querySelector('section[data-tidy-section-key="conditions"]');
-    const htmlContent = await generateSurvivalHtmlDefault({ actor });
+    const htmlContent = await generateSurvivalHtml({ actor, timestamp });
+    if (!htmlContent) return;
   
-    if (conditionSection) {
-      conditionSection.insertAdjacentHTML("afterend", htmlContent);
-    } else {
-      container.insertAdjacentHTML("beforeend", htmlContent);
-    }
+    container.insertAdjacentHTML("beforeend", htmlContent);
+  
+    console.log("[fit] Injecting Survival Header (fitSurvivalNeedsChanged - This Cycle)");
+    hasInjectedThisTimeAdvance.add(actor);
+  
+    const $container = $(container);
+    setupTooltips($container);
+    setupCollapseToggles($container, timestamp);
+    attachButtonHandlers($(html));
   });
   
-
 /*==================================================
 Mechanics for Hunger, Thirst, and Rest
 ===================================================*/
@@ -500,18 +665,14 @@ Hooks.on("updateItem", async (item, change, diff, userId) => {
 
   if (!isFood && !isWater) return;
 
-  //console.group(`🧪 [fit] updateItem DETECTED for ${item.name} (Actor: ${actor.name})`);
-  //console.log("Item:", item);
-  //console.log("Change Object:", change);
-  //console.groupEnd();
 
   if (isFood) {
-    //console.log(`✅ [fit] Detected Ration use. Running consumeFood for ${actor.name}`);
+    
     await consumeFood(actor);
   }
 
   if (isWater) {
-    //console.log(`✅ [fit] Detected Water use. Running consumeWater for ${actor.name}`);
+    
     await consumeWater(actor);
   }
 });
@@ -521,10 +682,9 @@ DND5e Trigger Eat or Drink
 ===================================================*/
 
 /*-------------------------------------------------
-DND5e clickEatOrDrink function
+clickEatOrDrink: Handles chat button use of item
 ---------------------------------------------------*/
-
-const clickEatOrDrink = async (event, type) => {
+export const clickEatOrDrink = async (event, type) => {
   event.preventDefault();
   const actorId = event.currentTarget.dataset.actorId;
   const itemId = event.currentTarget.dataset.itemId;
@@ -549,7 +709,10 @@ const clickEatOrDrink = async (event, type) => {
   }
 };
 
-const openItemSheet = async (event) => {
+/*-------------------------------------------------
+openItemSheet: Right-click to open item sheet
+---------------------------------------------------*/
+export const openItemSheet = async (event) => {
   event.preventDefault();
   const actorId = event.currentTarget.dataset.actorId;
   const itemId = event.currentTarget.dataset.itemId;
@@ -559,7 +722,7 @@ const openItemSheet = async (event) => {
 };
 
 /*--------------------------------------------------
-DND5e Chat button click handlers
+Attach Chat Button Handlers to Sheet
 --------------------------------------------------*/
 Hooks.on("renderActorSheet5eCharacter2", (app, html, data) => {
   html.find('img.fit-eat-button').off('click').on('click', async event => clickEatOrDrink(event, "eat"));
@@ -584,269 +747,98 @@ Hooks.on("renderActorSheet5eCharacter2", (app, html, data) => {
   });
 });
 
-/*----------------------------------------------------
-Fit Module: Inject Survival UI into Tidy5eCharacterSheet using tidy5e-sheet.renderActorSheet
------------------------------------------------------*/
-async function generateSurvivalHtmlTidy({ actor }) {
-  const hungerEnabled = game.settings.get("fit", "hungerTracking");
-  const thirstEnabled = game.settings.get("fit", "thirstTracking");
-  const restEnabled = game.settings.get("fit", "restTracking");
+/**
+ * ==========================================
+ * DND5e: Auto-Patch Consumables (Waterskin & Rations)
+ * Ensures they have correct activation & consumption data.
+ * ==========================================
+ */
+export async function autoPatchConsumables() {
+  const rationName = game.settings.get("fit", "rationName")?.toLowerCase();
+  const waterName = game.settings.get("fit", "waterName")?.toLowerCase();
+  const consumptionType = "itemUses";
 
-if (!hungerEnabled && !thirstEnabled && !restEnabled) return;
+  /**
+   * 🔁 Loop over all actors and their items
+   * Automatically configure Waterskin and Rations if needed
+   */
+  for (const actor of game.actors.contents) {
+    for (const item of actor.items.contents) {
+      const itemName = item.name.toLowerCase();
+      if (![rationName, waterName].includes(itemName)) continue;
 
-  // Retrieve the hunger data
-  const hunger = hungerLevel(actor) || "Unknown";
-  const rationName = game.settings.get("fit", "rationName") ?? "Rations";
-  const rationItem = actor.items.find(i => i.name === rationName);
-  const hungerVictual = rationItem?.name || "Unknown";
-  const hungerQty = rationItem?.system?.quantity ?? 0;
-  const hungerCharges = rationItem?.system?.uses?.value ?? 0;
-  const hungerIcon = rationItem?.img || "icons/consumables/grains/bread-loaf-boule-rustic-brown.webp";
-  const hungerDescription = rationItem?.system.description?.value || "No description";
-  const enrichedHungerDescription = await TextEditor.enrichHTML(hungerDescription, { async: true });
+      const consumptionTarget = item.id;
+      const useActivity = item.system.activities?.use ?? null;
 
-  // Retrieve the thirst data 
-  const thirst = thirstLevel(actor) || "Unknown";
-  const waterName = game.settings.get("fit", "waterName") ?? "Waterskin";  // ✅ Add this
-  const thirstItem = actor.items.find(i => i.name === waterName);
-  const thirstVictual = thirstItem?.name || "Unknown";
-  const thirstQty = thirstItem?.system?.quantity ?? 0;
-  const thirstCharges = thirstItem?.system?.uses?.value ?? 0;
-  const thirstIcon = thirstItem?.img || "icons/sundries/survival/wetskin-leather-purple.webp";
-  const thirstDescription = thirstItem?.system.description?.value || "No description";
-  const enrichedThirstDescription = await TextEditor.enrichHTML(thirstDescription, { async: true });
+      const needsPatch =
+        !useActivity ||
+        !useActivity.type ||
+        item.system.consumption?.target !== consumptionTarget;
 
-  // Retrieve terrain data
-  const terrainKey = game.settings.get("fit", "terrain") || "normal";
-  const terrain = terrainData[terrainKey];
-  const terrainName = terrain.name;
-  const terrainIcon = terrain.icon;
-  const terrainDescription = await TextEditor.enrichHTML(terrain.description, { async: true });
+      if (!needsPatch) continue;
 
-  // Retrieve exhaustion data
-  const exhaustionLevel = actor.system?.attributes?.exhaustion ?? 0;
-  const exhaustionKey = `level_${exhaustionLevel}`;
-  const exhaustion = exhaustionData[exhaustionKey] ?? exhaustionData["level_0"];
-  const enrichedExhaustionDescription = await TextEditor.enrichHTML(
-    exhaustion.description ?? "No description available.",
-    { async: true }
-  );
+      // ✅ Patch the item with standard activation/consumption config
+      await item.update({
+        "system.activation.type": "action",
+        "system.consumption.type": consumptionType,
+        "system.consumption.amount": 1,
+        "system.consumption.target": consumptionTarget,
+        "system.consume": {
+          "type": "charges",
+          "amount": 1
+        },
+        "system.activities.use": {
+          "activation": { "type": "action", "cost": 1 },
+          "consumption": {
+            "type": consumptionType,
+            "amount": 1,
+            "target": consumptionTarget
+          }
+        }
+      });
+    }
+  }
 
-  return `
-    <section class="items-list fit-survival-header">
-      <div class="fit-survival" style="margin-top: 1rem;">
-        <div class="items-section card">
-          <div class="items-header header">
-            <h3 class="item-name"><i class="fas fa-leaf"></i> Survival Needs</h3>
-          </div>
-          <ul class="item-list">
-            <li class="item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em; border-top: 1px solid var(--dnd5e-color-faint);">
-              <div style="display: flex; align-items: center; gap: 0.75em;">
-                <strong>Terrain Type:</strong>
-                <span>${terrainName}</span>
-                <div class="fit-item-icon">
-                  <img src="${terrainIcon}" class="fit-terrain-icon" />
-                  <div class="fit-item-tooltip2">
-                    <div class="fit-item-tooltip-title">${terrainName}</div>
-                    <div class="fit-item-tooltip-body">${terrainDescription}</div>
-                  </div>
-                  <div class="fit-item-label">${terrain.label}</div>
-                </div>
-              </div>
-              <div style="display: flex; align-items: center; gap: 0.75em;">
-                <strong>Exhaustion Level:</strong>
-                <span>${exhaustion.name}</span>
-                <div class="fit-item-icon">
-                  <img src="${exhaustion.icon}" class="fit-exhaustion-icon" />
-                  <div class="fit-item-tooltip">
-                    <div class="fit-item-tooltip-title">Exhaustion Level: ${exhaustion.name}</div>
-                    <div class="fit-item-tooltip-body">${enrichedExhaustionDescription}</div>
-                  </div>
-                  <div class="fit-item-label">${exhaustion.label}</div>
-                </div>
-              </div>
-            </li>
-          </ul>
-        </div>
+  /**
+   * 🪝 Hook: Pre-patch late-added items (like newly dropped or imported items)
+   */
+  Hooks.on("preUseItem", async (item, config, options) => {
+    const actor = item.actor;
+    if (!actor) return;
 
-        <section class="items-list fit-survival-header">
-        <div class="fit-survival" style="margin-top: 1rem;">
-          <div class="items-section card">
-            <div class="items-header header" style="
-              display: grid;
-              grid-template-columns: 3fr 3fr 2fr 1fr 1fr 1fr 1fr;
-              align-items: center;
-              font-size: 0.75em;
-            ">
-              <h3 class="item-name" style="margin: 0;">
-                <i class="fas fa-leaf"></i> Condition
-              </h3>
-              <div style="text-align: left;">STATUS</div>
-              <div style="text-align: left;">VICTUAL TYPE</div>
-              <div style="text-align: left;">QUANTITY</div>
-              <div style="text-align: center;">CHARGES</div>
-              <div style="text-align: center;">REFILL</div>
-              <div style="text-align: center;">USE ITEM</div>
-            </div>
+    const itemName = item.name.toLowerCase();
+    if (![rationName, waterName].includes(itemName)) return;
 
-            <ul class="item-list">
-              ${hungerEnabled ? `
-                  <li class="item" style="display: grid; grid-template-columns: 3fr 3fr 2fr 1fr 1fr 1fr 1fr; align-items: center; padding: 0.5em 1em; border-top: 1px solid var(--dnd5e-color-faint);">
-                  <div>Hunger</div>
-                  <div>${hunger}</div>
-                  <div>${hungerVictual}</div>
-                  <div style="text-align: center;">${hungerQty}</div>
-                  <div style="text-align: center;">${hungerCharges}</div>
-                  <div style="text-align: center;">-</div>
-                  <div class="fit-item-icon">
-                    <img src="${hungerIcon}" class="fit-eat-button" data-actor-id="${actor.id}" data-item-id="${rationItem?.id}" />
+    const consumptionTarget = item.id;
+    const needsPatch =
+      !item.system.activation?.type ||
+      item.system.consumption?.target !== consumptionTarget ||
+      !item.system.activities?.use;
 
-                  <div class="fit-item-tooltip">
-                    <div class="fit-item-tooltip-title">${hungerVictual}</div>
-                    <div class="fit-item-tooltip-body">${enrichedHungerDescription}</div>
-                  </div>
+    if (!needsPatch) return;
 
-                  <div class="fit-item-charges">${hungerCharges}</div>
-                  <div class="fit-item-label">${hungerVictual}</div>
-                </div>
-              </li>
-            ` : ''}
-             ${thirstEnabled ? `
-                <li class="item" style="display: grid; grid-template-columns: 3fr 3fr 2fr 1fr 1fr 1fr 1fr; align-items: center; padding: 0.5em 1em; border-top: 1px solid var(--dnd5e-color-faint);">
-                  <div>Thirst</div>
-                  <div>${thirst}</div>
-                  <div style="text-align: ;">${thirstVictual}</div>
-                  <div style="text-align: center;">${thirstQty}</div>
-                  <div style="text-align: center;">${thirstCharges}</div>
-                  <div style="text-align: center;">
-                    <button class="fit-refill-water" data-actor-id="${actor.id}" title="Refill water">↺</button>
-                  </div>
-                  <div class="fit-item-icon">
-                    <img src="${thirstIcon}" class="fit-drink-button" data-actor-id="${actor.id}" data-item-id="${thirstItem?.id}" />
-                    
-                    <div class="fit-item-tooltip">
-                      <div class="fit-item-tooltip-title">${thirstVictual}</div>
-                      <div class="fit-item-tooltip-body">${enrichedThirstDescription}</div>
-                    </div>
+    // ✅ Patch the item before use to ensure it works with item.use()
+    await item.update({
+      "system.activation.type": "action",
+      "system.consumption.type": consumptionType,
+      "system.consumption.amount": 1,
+      "system.consumption.target": consumptionTarget,
+      "system.consume": {
+        "type": "charges",
+        "amount": 1
+      },
+      "system.activities.use": {
+        "activation": { "type": "action", "cost": 1 },
+        "consumption": {
+          "type": consumptionType,
+          "amount": 1,
+          "target": consumptionTarget
+        }
+      }
+    });
 
-                    <div class="fit-item-charges">${thirstCharges}</div>
-                    <div class="fit-item-label">${thirstVictual}</div>
-                </div>
-                </li>
-              ` : ''}
-
-              ${restEnabled ? `
-                <li class="item" style="display: grid; grid-template-columns: 3fr 3fr 2fr 1fr 1fr 1fr 1fr; align-items: center; padding: 0.5em 1em; border-top: 1px solid var(--dnd5e-color-faint);">
-                  <div>Rest</div>
-                  <div>${restLevel(actor)}</div>
-                  <div> Long Rest</div>
-                  <div style="text-align: center;">-</div>
-                  <div style="text-align: center;">-</div>
-                  <div style="text-align: center;">-</div>
-                  <div class="fit-item-icon" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                    <img src="modules/fit/templates/icons/bedroll-grey.webp" class="fit-rest-button" data-actor-id="${actor.id}" />
-
-                    <div class="fit-item-tooltip">
-                      <div class="fit-item-tooltip-title">Long Rest</div>
-                      <div class="fit-item-tooltip-body">Take a long rest to recover health and reset fatigue.</div>
-                    </div>
-
-                    <div class="fit-item-label">Long Rest</div>
-                  </div>
-                </li>
-              ` : ''}
-          </ul>
-        </div>
-      </div>
-    </section>
-  `;
+    if (game.user.isGM) {
+      ui.notifications.info(`[fit] ${item.name} was auto-configured for usage.`);
+    }
+  });
 }
-
-Hooks.on("tidy5e-sheet.renderActorSheet", async (sheet, html, data) => {
-  const actor = sheet.actor;
-  if (!actor || actor.type !== "character") return;
-
-  const effectsTab = html.querySelector(".tidy-tab.effects");
-  const container = effectsTab?.querySelector(".scroll-container.flex-column.small-gap");
-  if (!container) {
-    console.warn("[fit] ❌ Could not find main scrollable container in Effects tab.");
-    return;
-  }
-
-  container.querySelector(".fit-survival-header")?.remove();
-
-  const htmlContent = await generateSurvivalHtmlTidy({ actor });
-  container.insertAdjacentHTML("beforeend", htmlContent);
-
-   // ✅ Attach button handlers here
-   const $html = $(html);
-
-   $html.find("img.fit-eat-button").off("click").on("click", async (event) => {
-     event.preventDefault();
-     await clickEatOrDrink(event, "eat");
-   });
- 
-   $html.find("img.fit-drink-button").off("click").on("click", async (event) => {
-     event.preventDefault();
-     await clickEatOrDrink(event, "drink");
-   });
- 
-   $html.find("img.fit-eat-button").off("contextmenu").on("contextmenu", (event) => openItemSheet(event));
-   $html.find("img.fit-drink-button").off("contextmenu").on("contextmenu", (event) => openItemSheet(event));
- 
-   $html.find("img.fit-rest-button").off("click").on("click", async (event) => {
-     event.preventDefault();
-     const actorId = event.currentTarget.dataset.actorId;
-     const actor = game.actors.get(actorId);
-     if (!actor) return;
- 
-     await actor.longRest();
-     if (game.settings.get("fit", "confirmChat")) {
-       ChatMessage.create({ content: `${actor.name} takes a long rest.` });
-     }
-     updateExhaustion(actor);
-   });
- 
-   $html.find(".fit-refill-water").off("click").on("click", async (event) => {
-     event.preventDefault();
-     const actorId = event.currentTarget.dataset.actorId;
-     const actor = game.actors.get(actorId);
-     if (!actor) return;
- 
-     const waterName = game.settings.get("fit", "waterName");
-     const waterskin = actor.items.getName(waterName);
-     if (!waterskin) {
-       ui.notifications.warn(`${actor.name} has no ${waterName} to refill.`);
-       return;
-     }
- 
-     await waterskin.update({
-       "system.uses.value": waterskin.system.uses.max,
-       "system.uses.spent": 0
-     });
- 
-     ui.notifications.info(`${actor.name}'s ${waterskin.name} has been refilled.`);
-     actor.sheet.render(true);
-   });
- });
-
-Hooks.on("fitSurvivalNeedsChanged", async (actor) => {
-  if (!actor || actor.type !== "character") return;
-
-  const html = actor.sheet?.element?.[0];
-  const effectsTab = html?.querySelector(".tidy-tab.effects");
-  const container = effectsTab?.querySelector(".scroll-container.flex-column.small-gap");
-  if (!container) return;
-
-  container.querySelector(".fit-survival-header")?.remove();
-
-  const conditionSection = container.querySelector('section[data-tidy-section-key="conditions"]');
-  const htmlContent = await generateSurvivalHtmlTidy({ actor });
-
-  if (conditionSection) {
-    conditionSection.insertAdjacentHTML("afterend", htmlContent);
-  } else {
-    container.insertAdjacentHTML("beforeend", htmlContent);
-  }
-});
-
