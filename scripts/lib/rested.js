@@ -133,7 +133,7 @@ Hooks.once("ready", () => {
 });
 
 /*--------------------------------------------------------------------
- Function to reset rest after consuming food
+ Function to reset rest
  ---------------------------------------------------------------------*/
 export async function resetRestAfterRest(actor) {
   if (!actor) return;
@@ -142,7 +142,7 @@ export async function resetRestAfterRest(actor) {
 
   // ✅ Instead of updating exhaustion, call the Hook so dnd5e.js handles it
   Hooks.call("updateExhaustionEffect", actor);
-  
+  Hooks.call("initializeRest", actor);         // ✅ Re-renders Fit Table
 
 }
 

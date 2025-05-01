@@ -702,7 +702,9 @@ export const clickEatOrDrink = async (event, type) => {
 
     if (game.settings.get("fit", "confirmChat")) {
       const action = type === "drink" ? "drinks from" : "eats";
-      ChatMessage.create({ content: `${actor.name} ${action} ${item.name}. ${type === "drink" ? "Thirst" : "Hunger"} reset.` });
+      const stat = type === "drink" ? "Thirst" : "Hunger";
+    
+      ui.notifications.info(`${actor.name} ${action} ${item.name}. ${stat} reset.`);
     }
 
     updateExhaustion(actor);
@@ -740,7 +742,7 @@ Hooks.on("renderActorSheet5eCharacter2", (app, html, data) => {
     await actor.longRest();
 
     if (game.settings.get("fit", "confirmChat")) {
-      ChatMessage.create({ content: `${actor.name} takes a long rest.` });
+      ui.notifications.info(`${actor.name} takes a long rest.`, { permanent: false });
     }
 
     updateExhaustion(actor);

@@ -1,4 +1,5 @@
 import registerSettings from "./lib/settings.js"; 
+import FitTable from "./lib/fit-table.js";
 
 
 /*-------------------------------------------------
@@ -231,4 +232,50 @@ Hooks.once("ready", async () => {
     await systemHooks.autoPatchConsumables();
   }
 });
+
+/*=============================================
+Add a Fitness Table to the Scene Controls
+=============================================*/
+
+// Add a button to the Scene Controls for toggling the Hunger Table
+Hooks.on("getSceneControlButtons", (controls) => {
+  if (!game.settings.get("fit", "enabled")) return;
+  if (!game.user.isGM) return; // ✅ Hide Fit Table button from non-GMs
+
+  const tokenControls = controls.find((c) => c.name === "token");
+  if (!tokenControls) {
+    console.error("❌ Token Controls not found!");
+    return;
+  }
+
+  tokenControls.tools.push({
+    name: "fit-table",
+    title: "Toggle Fit Table",
+    icon: "fa-solid fa-person-running",
+    toggle: true,
+    css: "toggle",
+    tooltip: "Toggle Fit Table",
+    onClick: (isActive) => {
+      const fitTable = game.modules.get("fit")?.api?.fitTable;
+  
+      if (!fitTable) {
+        console.error("❌ Fit Table activation function not found.");
+        return;
+      }
+  
+      if (isActive) {
+        fitTable.render(true);
+      } else {
+        const fitTableWindow = Object.values(ui.windows).find(
+          (w) => w.options.title === "Fit Table"
+        );
+        if (fitTableWindow) fitTableWindow.close();
+      }
+    }
+  });
+    });
    
+    Hooks.once("ready", () => {
+      if (!game.modules.get("fit").api) game.modules.get("fit").api = {};
+      game.modules.get("fit").api.fitTable = FitTable.activate(systemHooks);
+    });
