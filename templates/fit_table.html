@@ -1,0 +1,36 @@
+<div id="fit_table">
+  <table style="width: 100%; text-align: center;">
+    <thead>
+      <tr>
+        <th>Actor</th>
+        <th>Hunger</th>
+        <th>Thirst</th>
+        <th>Rest</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each onCanvas }}
+        <tr>
+          <td>{{ name }}</td>
+          <td>{{ hunger }}</td>
+          <td>{{ thirst }}</td>
+          <td>{{ rest }}</td>
+        </tr>
+      {{/each }}
+
+      {{#if offCanvas.length}}
+        <tr><td colspan="4" style="font-weight: bold; text-align: left; background-color: #eee;">Off-Canvas</td></tr>
+        {{#each offCanvas }}
+          <tr>
+            <td>{{ name }}</td>
+            <td>{{ hunger }}</td>
+            <td>{{ thirst }}</td>
+            <td>{{ rest }}</td>
+          </tr>
+        {{/each }}
+      {{/if}}
+    </tbody>
+  </table>
+</div>
+
+  
