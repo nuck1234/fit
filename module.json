@@ -2,7 +2,7 @@
   "id": "fit",
   "title": "Fit Module - Hunger, Thirst, Rest",
   "description": "A survival tracking system for Foundry VTT that manages hunger, thirst, and rest.",
-  "version": "1.2.1",
+  "version": "1.2.3",
   "authors": [
     {
       "name": "Nuckman",
@@ -43,11 +43,6 @@
     "systems": [
       {
         "id": "dnd5e",
-        "type": "system",
-        "compatibility": {}
-      },
-      {
-        "id": "pf2e",
         "type": "system",
         "compatibility": {}
       }
