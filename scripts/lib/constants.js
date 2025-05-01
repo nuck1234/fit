@@ -221,7 +221,7 @@ export const exhaustionData = {
   },
   level_3: {
     name: "Level Three",
-    label: "Level 4",  // 👈 This is used under the icon
+    label: "Level 3",  // 👈 This is used under the icon
     icon: "systems/dnd5e/icons/svg/statuses/exhaustion-3.svg",
     description: "Your exhaustion level is three. <p> A disadvantage on attack and saving roles has been applied. <p> Check your condition and make the necessary steps to remove this impediment"
     .trim()
